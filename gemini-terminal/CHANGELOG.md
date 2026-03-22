@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+- **🚀 First Stable Public Release**
+  - **Pre-installed Home Assistant MCP Server**: Gemini Terminal now includes `ha-mcp` for robust, natural language control of entities.
+  - **Enhanced Logging**: Integrated startup diagnostics and API key masking.
+  - **Persistent Shell Support**: Terminal now remains open even if the main process exits.
+  - **Full Gemini-CLI Integration**: Full support for Google's newest AI coding assistant.
+  - **Port 7682**: Changed default port to avoid conflicts with other add-ons.
+
 ## 1.0.7
 - **✨ New Features**
   - **Pre-installed Home Assistant MCP Server**: Gemini Terminal now includes `ha-mcp` pre-installed for better stability.
