@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1
+- **🛡️ Timeout & Performance Fix**
+  - Reduced ttyd ping-interval to 5s to prevent Home Assistant Ingress timeouts during long tasks.
+  - Added default `.geminiignore` to skip large database files, improving directory scan speed.
+
+
 ## 2.0.0
 - **🚀 Stable Release Redux**
   - Reverted to the highly stable v1.1.5 foundation to eliminate persistent crashes.

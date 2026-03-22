@@ -4,7 +4,7 @@
 set -e
 set -o pipefail
 
-# Initialize environment for Gemini Code CLI using /data (HA best practice)
+# Initialize environment for Gemini CLI using /data (HA best practice)
 init_environment() {
     # Use /data exclusively - guaranteed writable by HA Supervisor
     local data_home="/data/home"
@@ -13,7 +13,7 @@ init_environment() {
     local state_dir="/data/.local/state"
     local gemini_config_dir="/data/.config/gemini"
 
-    bashio::log.info "Initializing Gemini Code environment in /data..."
+    bashio::log.info "Initializing Gemini CLI environment in /data..."
 
     # Create all required directories
     if ! mkdir -p "$data_home" "$config_dir/gemini" "$cache_dir" "$state_dir" "/data/.local"; then
@@ -58,6 +58,20 @@ init_environment() {
         cp /opt/scripts/tmux.conf "$data_home/.tmux.conf"
         chmod 644 "$data_home/.tmux.conf"
         bashio::log.info "tmux configuration installed to $data_home/.tmux.conf"
+    fi
+
+    # Ensure .geminiignore exists to prevent massive scans of HA database/backups
+    if [ ! -f "/config/.geminiignore" ]; then
+        bashio::log.info "Creating default /config/.geminiignore to skip large files..."
+        cat > "/config/.geminiignore" << 'EOF'
+.storage/
+backups/
+addons/
+*.db
+*.db-shm
+*.db-wal
+*.log
+EOF
     fi
 
     bashio::log.info "Environment initialized:"
@@ -339,13 +353,13 @@ start_web_terminal() {
     # Terminal theme - dark palette with terracotta accents (#d97757)
     local ttyd_theme='{"background":"#1a1b26","foreground":"#c0caf5","cursor":"#d97757","cursorAccent":"#1a1b26","selectionBackground":"#33467c","selectionForeground":"#c0caf5","black":"#15161e","red":"#f7768e","green":"#9ece6a","yellow":"#e0af68","blue":"#7aa2f7","magenta":"#bb9af7","cyan":"#7dcfff","white":"#a9b1d6","brightBlack":"#414868","brightRed":"#f7768e","brightGreen":"#9ece6a","brightYellow":"#e0af68","brightBlue":"#7aa2f7","brightMagenta":"#bb9af7","brightCyan":"#7dcfff","brightWhite":"#c0caf5"}'
 
-    # Run ttyd with keepalive configuration to prevent WebSocket disconnects
-    # See: https://github.com/oded996/gemini-cli-home-assistant-addons/issues/24
+    # Run ttyd with aggressive keepalive configuration
+    # See: https://github.com/tsl0922/ttyd/issues/1000
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 30 \
+        --ping-interval 5 \
         --client-option enableReconnect=true \
         --client-option reconnect=10 \
         --client-option reconnectInterval=5 \
@@ -363,7 +377,7 @@ run_health_check() {
     fi
 }
 
-# Setup ha-mcp (Home Assistant MCP Server) for Gemini Code integration
+# Setup ha-mcp (Home Assistant MCP Server) for Gemini CLI integration
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         bashio::log.info "Setting up Home Assistant MCP integration..."
