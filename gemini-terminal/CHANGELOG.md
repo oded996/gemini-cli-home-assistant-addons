@@ -53,6 +53,13 @@
   - Improved background launch reliability.
 
 
+## 2.2.4
+- **🛠️ UI & Compatibility Fix**
+  - Fixed "Approval Crash" by forcing `TERM=vt100` (Legacy Mode). This disables unstable mouse-UI popups.
+  - Improved Copy/Paste support: reverted to high-contrast theme and added `Shift+Select` tip.
+  - Aggressively cleaned startup logic to ensure a fresh session every boot.
+
+
 ## 2.2.1
 - **🛠️ UI & Core Stability**
   - Fixed standard copy/paste support by enabling `copyOnSelect` and using a native theme.
