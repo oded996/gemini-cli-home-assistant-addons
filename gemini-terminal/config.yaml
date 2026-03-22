@@ -1,7 +1,7 @@
 ---
 name: "Gemini Terminal"
 description: "Terminal interface for Google's Gemini CLI with persistent auth and packages"
-version: "2.0.1"
+version: "2.0.2"
 slug: "gemini_terminal"
 init: false
 
@@ -59,6 +59,10 @@ auth_api: true
 
 # Service startup configuration
 startup: services
+
+# Resource management
+memory: 4G
+cpu: 4.0
 
 # Web UI access URL
 webui: http://[HOST]:[PORT:7682]/

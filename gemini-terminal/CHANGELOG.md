@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.2
+- **⚙️ Memory & Diagnostics Fix**
+  - Increased RAM limit to 4GB and CPU to 4.0.
+  - Explicitly allocated 4GB to Node.js heap to prevent OOM crashes on complex tasks.
+  - Created `/config/gemini-logs` symlink for easier access to internal logs.
+  - Added `/config/gemini_system.log` to track resource limits.
+
+
 ## 2.0.1
 - **🛡️ Timeout & Performance Fix**
   - Reduced ttyd ping-interval to 5s to prevent Home Assistant Ingress timeouts during long tasks.

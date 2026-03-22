@@ -34,6 +34,10 @@ init_environment() {
     # Gemini-specific environment variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
+    
+    # Critical for Node.js stability in containers
+    export NODE_OPTIONS="--max-old-space-size=4096"
+    export PYTHONUNBUFFERED=1
 
     # Set Gemini API key if provided in configuration
     if bashio::config.has_value 'gemini_api_key'; then
@@ -73,6 +77,18 @@ addons/
 *.log
 EOF
     fi
+
+    # Log system limits and state
+    {
+        echo "--- Session Start: $(date) ---"
+        echo "Node: $(node --version)"
+        [ -f /proc/sys/fs/inotify/max_user_watches ] && echo "Inotify limit: $(cat /proc/sys/fs/inotify/max_user_watches)"
+        free -m
+    } > /config/gemini_system.log
+
+    # Create symlink to internal logs for easy access via File Editor
+    mkdir -p "$data_home/.gemini/logs"
+    ln -sf "$data_home/.gemini/logs" "/config/gemini-logs"
 
     bashio::log.info "Environment initialized:"
     bashio::log.info "  - Home: $HOME"
