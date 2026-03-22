@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+- **⚡ UX Improvements**
+  - Removed the "Press Enter to continue" prompt on startup for faster access.
+  - Updated welcome banner with correct version history.
+
+
 ## 1.1.2
 - **📖 Documentation**
   - Added "Safety & Guardrails" section to clarify how Gemini handles file edits.

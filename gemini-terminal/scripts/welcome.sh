@@ -60,14 +60,11 @@ show_whats_new() {
     echo ""
 
     case "$version" in
-        2.0.0)
-            echo -e "  ${TERRACOTTA}*${NC} ${BOLD}HA Smart Context${NC} — Gemini automatically knows your Home"
-            echo -e "    Assistant setup (entities, add-ons, errors, system info)"
-            echo -e "  ${TERRACOTTA}*${NC} ${BOLD}Welcome screen${NC} — version tracking and release highlights"
-            echo -e "  ${TERRACOTTA}*${NC} Run ${DIM}ha-context${NC} anytime to refresh, ${DIM}ha-context --full${NC} for details"
+        1.1.0)
+            echo -e "  ${TERRACOTTA}*${NC} ${BOLD}First Stable Release${NC} — Full Gemini CLI integration"
+            echo -e "  ${TERRACOTTA}*${NC} ${BOLD}HA Smart Context${NC} — Gemini knows your Home Assistant setup"
+            echo -e "  ${TERRACOTTA}*${NC} ${BOLD}Persistent Sessions${NC} — Built-in tmux support"
             echo ""
-            echo -e "  ${DIM}Thank you for sticking with me through the v1.6-1.9 bumps.${NC}"
-            echo -e "  ${DIM}This one's for you.${NC}"
             ;;
         *)
             echo -e "  ${DIM}Upgraded to v${version}. See CHANGELOG for details.${NC}"
@@ -76,6 +73,9 @@ show_whats_new() {
 
     # Mark as seen
     save_version "$version"
+    
+    # Give user a moment to read what's new
+    sleep 3
 }
 
 main() {
@@ -88,8 +88,8 @@ main() {
     show_whats_new "$current_version" "$last_seen"
 
     echo ""
-    printf "  Press Enter to continue..."
-    read -r
+    # Removed the "Press Enter" prompt to start Gemini immediately
+    sleep 1
 }
 
 main "$@"
