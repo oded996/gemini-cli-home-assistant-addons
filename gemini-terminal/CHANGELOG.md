@@ -33,6 +33,12 @@
   - Added default `.geminiignore` to skip large database files, improving directory scan speed.
 
 
+## 2.0.7
+- **⚡ Interface Stability Fix**
+  - Disabled experimental background tasks (`--experimental-acp false`) that caused terminal corruption and crashes during large outputs.
+  - Forced stable interactive mode to prevent V8 engine assertion failures.
+
+
 ## 2.0.6
 - **🔍 Deep Screen Capture**
   - Implemented `tmux pipe-pane` to capture every character seen on the screen to `/config/gemini_screen.log`.
