@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.5
+- **🛠️ Fixes**
+  - Fixed "WebSocket not authenticated" error for Home Assistant MCP tools.
+  - Upgraded add-on permissions to "admin" for full entity and dashboard control.
+  - Added compatibility environment variables (HASS_TOKEN/HASS_URL) for the MCP server.
+
+
 ## 1.1.4
 - **⚡ Performance & UX**
   - Removed the welcome screen entirely for a faster, cleaner startup.
