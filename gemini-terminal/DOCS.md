@@ -71,6 +71,23 @@ This add-on includes the [homeassistant-ai/ha-mcp](https://github.com/homeassist
 
 The MCP (Model Context Protocol) server automatically connects to your Home Assistant using the Supervisor API. No manual configuration or token setup is required - it just works!
 
+## Safety & Guardrails
+
+Gemini Terminal is designed to be powerful but safe. It includes several built-in guardrails to prevent accidental or destructive changes:
+
+### 1. Interactive Approvals
+By default, the Gemini CLI will **never** modify a file or execute a shell command without your explicit permission. It will show you a **diff** of the proposed changes and ask for a confirmation (`y/n`).
+
+### 2. Plan Mode (Dry-Run)
+If you want to explore solutions without any risk of modification, you can launch Gemini in **Plan Mode**:
+```bash
+gemini --approval-mode plan
+```
+In this mode, Gemini can read your configuration and propose changes, but it is strictly forbidden from executing any tools that modify your system or files.
+
+### 3. Home Assistant Backups
+Because this add-on operates on your live `/config` directory, we always recommend ensuring you have a recent **Home Assistant backup** before performing major AI-driven refactoring of your YAML files.
+
 ## Troubleshooting
 
 - If Gemini doesn't start automatically, try running `gemini` manually.

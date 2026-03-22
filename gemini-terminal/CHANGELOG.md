@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+- **📖 Documentation**
+  - Added "Safety & Guardrails" section to clarify how Gemini handles file edits.
+  - Documented "Plan Mode" (`--approval-mode plan`) for dry-runs.
+
+
 ## 1.1.1
 - **🛠️ Fixes**
   - Added build dependencies (`build-base`, `g++`, `make`) to the Dockerfile. This fixes the installation error when compiling native npm modules like `tree-sitter-bash`.
