@@ -26,14 +26,14 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Force the CLI to follow our stability rules via its own settings file
-    # This prevents it from ignoring our command line flags
+    # Force stable settings (No screen reader, No experimental features)
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "yolo",
-  "screenReader": true,
+  "screenReader": false,
   "telemetry": "off",
-  "experimentalAcp": false
+  "experimentalAcp": false,
+  "autocomplete": false
 }
 EOF
 
@@ -86,28 +86,28 @@ start_web_terminal() {
     # Kill any zombie sessions
     tmux kill-session -t gemini 2>/dev/null || true
 
-    # Launch Gemini in a background worker
-    # We use --approval-mode yolo twice (flag and settings) to be 100% sure
-    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --screen-reader --approval-mode yolo --raw-output --accept-raw-output-risk"
+    # Stability Flags:
+    # --no-autocomplete: Stops the background flickering
+    # --experimental-acp false: Stops context protocol noise
+    # --raw-output: Prevents buffer corruption
+    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --experimental-acp false --no-autocomplete --approval-mode yolo --raw-output --accept-raw-output-risk"
     
     bashio::log.info "Launching Gemini background worker..."
-    tmux new-session -d -s gemini "export TERM=xterm-256color; ${gemini_cmd} 2> ${debug_log}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
+    # IMPORTANT: We disable mouse mode (-v) to allow browser text selection (COPY/PASTE)
+    tmux new-session -d -s gemini "tmux set-option -g mouse off; export TERM=xterm-256color; ${gemini_cmd} 2> ${debug_log}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
-    # Terminal theme - dark palette
-    local ttyd_theme='{"background":"#1a1b26","foreground":"#c0caf5","cursor":"#d97757"}'
-
-    # ttyd now just attaches to the background session.
-    # We use rendererType=webgl which is often better for mouse selection
+    # ttyd configuration:
+    # enableReconnect=true: handle proxy flickers
+    # copyOnSelect=true: helper for browsers
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 5 \
+        --ping-interval 10 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
-        --client-option rendererType=webgl \
-        --client-option "theme=${ttyd_theme}" \
-        bash -c "echo -e '\033[0;36mInitializing persistent Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
+        --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
+        bash -c "echo -e '\033[0;36mAttaching to persistent Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
 # Setup ha-mcp

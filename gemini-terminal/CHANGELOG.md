@@ -53,6 +53,14 @@
   - Improved background launch reliability.
 
 
+## 2.2.7
+- **✨ UX & Native Experience Update**
+  - Removed annoying "Screen Reader" mode while maintaining stability.
+  - Fixed Copy/Paste: Disabled `tmux` mouse mode to allow native browser text selection.
+  - Hard-disabled background "flickering" tasks (`--no-autocomplete`) to prevent TTY crashes.
+  - Improved startup speed and UI feedback.
+
+
 ## 2.2.6
 - **🛡️ Hardened Configuration Override**
   - Forcibly overwrites `settings.json` on every boot to ensure "YOLO" and "Screen Reader" modes are active.
