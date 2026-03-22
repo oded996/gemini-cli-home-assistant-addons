@@ -286,33 +286,23 @@ get_gemini_launch_command() {
     # Get configuration value, default to true
     auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
 
-    # Prepend welcome banner if available
-    local welcome_prefix=""
-    if [ -f /usr/local/bin/welcome ]; then
-        welcome_prefix="welcome; "
-    fi
+    # Loading message to show while tmux/gemini starts
+    local loading_msg="echo -e '\033[0;36mInitializing Gemini Terminal...\033[0m'; "
 
-    # Check if gemini is actually in the path
-    if ! command -v gemini > /dev/null; then
-        cmd="echo 'ERROR: gemini command NOT FOUND in PATH! Check installation logs.'; bash"
+    if [ "$auto_launch_gemini" = "true" ]; then
+        # Use tmux for session persistence
+        cmd="tmux -u new-session -A -s gemini 'gemini'"
     else
-        if [ "$auto_launch_gemini" = "true" ]; then
-            # Use tmux for session persistence
-            # Add -u for UTF-8 support
-            cmd="tmux -u new-session -A -s gemini 'gemini'"
+        if [ -f /usr/local/bin/gemini-session-picker ]; then
+            cmd="/usr/local/bin/gemini-session-picker"
         else
-            if [ -f /usr/local/bin/gemini-session-picker ]; then
-                cmd="/usr/local/bin/gemini-session-picker"
-            else
-                bashio::log.warning "Session picker not found, falling back to auto-launch"
-                cmd="tmux -u new-session -A -s gemini 'gemini'"
-            fi
+            bashio::log.warning "Session picker not found, falling back to auto-launch"
+            cmd="tmux -u new-session -A -s gemini 'gemini'"
         fi
     fi
 
-    # Final command string with more fallback safety
-    # We use ';' to ensure the next command runs even if the previous one succeeded
-    echo "${welcome_prefix}${cmd}; echo ''; echo 'Terminal session ended. Dropping to bash...'; exec bash"
+    # Final command string: show loading, run main command, then fallback to bash
+    echo "${loading_msg}${cmd}; echo ''; echo 'Terminal session ended. Dropping to bash...'; exec bash"
 }
 
 

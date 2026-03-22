@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4
+- **⚡ Performance & UX**
+  - Removed the welcome screen entirely for a faster, cleaner startup.
+  - Added a "Initializing Gemini Terminal..." indicator for better feedback during loading.
+
+
 ## 1.1.3
 - **⚡ UX Improvements**
   - Removed the "Press Enter to continue" prompt on startup for faster access.
