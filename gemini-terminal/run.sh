@@ -41,8 +41,12 @@ init_environment() {
         api_key=$(bashio::config 'gemini_api_key')
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
-            bashio::log.info "Gemini API key configured from add-on options"
+            bashio::log.info "Gemini API key configured from add-on options (masking: ${api_key:0:4}...${api_key: -4})"
+        else
+            bashio::log.info "Gemini API key option is empty or null"
         fi
+    else
+        bashio::log.info "Gemini API key not found in configuration"
     fi
 
     # Migrate any existing authentication files from legacy locations
@@ -287,20 +291,26 @@ get_gemini_launch_command() {
         welcome_prefix="welcome; "
     fi
 
-    if [ "$auto_launch_gemini" = "true" ]; then
-        # Use tmux for session persistence
-        cmd="tmux new-session -A -s gemini 'gemini'"
+    # Check if gemini is actually in the path
+    if ! command -v gemini > /dev/null; then
+        cmd="echo 'ERROR: gemini command NOT FOUND in PATH! Check installation logs.'; bash"
     else
-        if [ -f /usr/local/bin/gemini-session-picker ]; then
-            cmd="/usr/local/bin/gemini-session-picker"
+        if [ "$auto_launch_gemini" = "true" ]; then
+            # Use tmux for session persistence
+            # Add -u for UTF-8 support
+            cmd="tmux -u new-session -A -s gemini 'gemini'"
         else
-            bashio::log.warning "Session picker not found, falling back to auto-launch"
-            cmd="tmux new-session -A -s gemini 'gemini'"
+            if [ -f /usr/local/bin/gemini-session-picker ]; then
+                cmd="/usr/local/bin/gemini-session-picker"
+            else
+                bashio::log.warning "Session picker not found, falling back to auto-launch"
+                cmd="tmux -u new-session -A -s gemini 'gemini'"
+            fi
         fi
     fi
 
-    # Add a fallback shell so the terminal doesn't close on error
-    echo "${welcome_prefix}${cmd} || (echo 'Command failed or exited. Dropping to shell...'; bash)"
+    # Final command string with more fallback safety
+    echo "${welcome_prefix}${cmd} || (echo 'Gemini exited or failed to start. Type \"gemini\" to try again manually.'; exec bash)"
 }
 
 
