@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+- **🛠️ Fixes**
+  - Added build dependencies (`build-base`, `g++`, `make`) to the Dockerfile. This fixes the installation error when compiling native npm modules like `tree-sitter-bash`.
+
 ## 1.1.0
 - **🚀 First Stable Public Release**
   - **Pre-installed Home Assistant MCP Server**: Gemini Terminal now includes `ha-mcp` for robust, natural language control of entities.

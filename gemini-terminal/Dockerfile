@@ -23,9 +23,14 @@ RUN apk add --no-cache \
     yq \
     coreutils
 
-# Install Gemini CLI via npm
-RUN npm install -g @google/gemini-cli@latest \
-    && npm cache clean --force
+# Install Gemini CLI via npm (requires build tools for native modules like tree-sitter)
+RUN apk add --no-cache --virtual .build-deps \
+    build-base \
+    g++ \
+    make \
+    && npm install -g @google/gemini-cli@latest \
+    && npm cache clean --force \
+    && apk del --no-cache .build-deps
 
 # Install uv for running ha-mcp (Python package manager/runner)
 RUN apk add --no-cache uv
