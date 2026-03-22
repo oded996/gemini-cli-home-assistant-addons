@@ -310,7 +310,8 @@ get_gemini_launch_command() {
     fi
 
     # Final command string with more fallback safety
-    echo "${welcome_prefix}${cmd} || (echo 'Gemini exited or failed to start. Type \"gemini\" to try again manually.'; exec bash)"
+    # We use ';' to ensure the next command runs even if the previous one succeeded
+    echo "${welcome_prefix}${cmd}; echo ''; echo 'Terminal session ended. Dropping to bash...'; exec bash"
 }
 
 
