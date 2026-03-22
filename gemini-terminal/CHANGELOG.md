@@ -110,6 +110,14 @@
   - Improved tmux attachment logic for better browser-to-container reliability.
 
 
+## 2.3.2
+- **✨ Full Interactivity Restored**
+  - Removed forced YOLO mode: Gemini will now correctly ask for approvals again.
+  - Implemented 2-second "Fast Heartbeat" to prevent Home Assistant proxy timeouts during interactive prompts.
+  - Switched to direct foreground execution for perfect TTY and keyboard detection.
+  - Cleaned up experimental background logic for a more predictable experience.
+
+
 ## 2.3.1
 - **🛠️ Ultra-Stable Mode**
   - Switched to `-y` flag for absolute YOLO mode to bypass all approval prompts.

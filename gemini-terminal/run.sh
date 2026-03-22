@@ -20,16 +20,17 @@ init_environment() {
     export XDG_CONFIG_HOME="$config_dir"
     export LANG="en_US.UTF-8"
     export LC_ALL="en_US.UTF-8"
+    export TERM="xterm-256color"
     
     # Gemini Variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Force stable settings - absolute minimal
+    # Restore standard interactive settings
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
-  "approvalMode": "yolo",
+  "approvalMode": "default",
   "screenReader": false,
   "telemetry": "off"
 }
@@ -49,13 +50,12 @@ EOF
         fi
     fi
 
-    # Ensure .geminiignore is very aggressive
-    cat > "/config/.geminiignore" << 'EOF'
+    # Ensure .geminiignore is aggressive to help performance
+    if [ ! -f "/config/.geminiignore" ]; then
+        cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
 .gemini*/
-gemini_crash.log
-gemini_debug.log
 backups/
 addons/
 deps/
@@ -68,11 +68,6 @@ node_modules/
 *.db
 *.log
 EOF
-
-    # Log any existing crash reports
-    local reports=$(ls /config/report.*.json 2>/dev/null || true)
-    if [ -n "$reports" ]; then
-        bashio::log.warning "Found existing crash reports in /config: $reports"
     fi
 }
 
@@ -83,29 +78,29 @@ start_web_terminal() {
 
     local node_bin=$(which node)
     local gemini_bin=$(which gemini)
-    local crash_log="/config/gemini_crash.log"
-
-    tmux kill-session -t gemini 2>/dev/null || true
+    
+    # Get user configuration
+    local gemini_debug=$(bashio::config 'gemini_debug' 'false')
+    local debug_flag=""
+    [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
     # Stability Flags:
-    # Use -y for YOLO mode instead of --approval-mode
-    # Omit --acp to keep it simple
-    # Set TERM to linux for maximum compatibility
-    local gemini_cmd="${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} -y --sandbox false --raw-output --accept-raw-output-risk"
+    # Removed forced YOLO - restoring interactive mode
+    # Run in foreground for best TTY detection
+    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --raw-output --accept-raw-output-risk ${debug_flag}"
     
-    bashio::log.info "Launching Gemini in Ultra-Stable mode..."
-    tmux new-session -d -s gemini "export TERM=linux; tmux pipe-pane -o 'cat >> ${crash_log}'; ${gemini_cmd}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
-
+    # Run ttyd with an extremely fast heartbeat (2s)
+    # This prevents Home Assistant's proxy from timing out while you are reading a prompt
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 10 \
+        --ping-interval 2 \
+        --ping-timeout 60 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
-        --client-option allowContextMenu=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mAttaching to session...\033[0m'; sleep 1; tmux attach-session -t gemini"
+        bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; ${gemini_cmd}; echo ''; echo 'Gemini session ended.'; exec bash"
 }
 
 # Setup ha-mcp
