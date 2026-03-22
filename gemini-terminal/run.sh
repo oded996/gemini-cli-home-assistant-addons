@@ -41,6 +41,7 @@ init_environment() {
         api_key=$(bashio::config 'gemini_api_key')
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
+            export GEMINI_API_KEY="$api_key"
             bashio::log.info "Gemini API key configured from add-on options (masking: ${api_key:0:4}...${api_key: -4})"
         else
             bashio::log.info "Gemini API key option is empty or null"
