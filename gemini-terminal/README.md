@@ -2,7 +2,7 @@
 
 A secure, web-based terminal with Gemini Code CLI pre-installed for Home Assistant.
 
-![Gemini Terminal Screenshot](https://github.com/heytcass/home-assistant-addons/raw/main/gemini-terminal/screenshot.png)
+![Gemini Terminal Screenshot](https://github.com/oded996/gemini-cli-home-assistant-addons/raw/main/gemini-terminal/screenshot.png)
 
 *Gemini Terminal running in Home Assistant*
 

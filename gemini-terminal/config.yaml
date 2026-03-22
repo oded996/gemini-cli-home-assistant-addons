@@ -12,7 +12,7 @@ arch:
   - armv7
 
 # External resources
-url: "https://github.com/google/gemini-cli"
+url: "https://github.com/oded996/gemini-cli-home-assistant-addons"
 
 # Web interface configuration
 ingress: true
