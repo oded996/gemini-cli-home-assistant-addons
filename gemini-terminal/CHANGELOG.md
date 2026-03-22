@@ -110,6 +110,13 @@
   - Improved tmux attachment logic for better browser-to-container reliability.
 
 
+## 2.3.5
+- **🛠️ Config & Diagnostic Fix**
+  - Fixed invalid `settings.json` format causing startup warnings.
+  - Improved internal log extraction using `find` to ensure diagnostic traces are captured.
+  - Explicitly allocated memory stack to the Node.js process to improve stability during complex reasoning.
+
+
 ## 2.3.4
 - **🛠️ Boot & Auth Fix**
   - Fixed "unrecognized option: ping-timeout" which caused terminal boot failure.

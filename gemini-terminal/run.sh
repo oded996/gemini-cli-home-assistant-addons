@@ -13,7 +13,7 @@ init_environment() {
 
     bashio::log.info "Initializing Gemini CLI environment..."
 
-    mkdir -p "$data_home" "$config_dir/gemini" "$gemini_user_dir" "/data/.cache" "/data/.local"
+    mkdir -p "$data_home" "$config_dir/gemini" "$gemini_user_dir/logs" "/data/.cache" "/data/.local"
     chmod 755 "$data_home" "$config_dir" "$gemini_user_dir"
 
     export HOME="$data_home"
@@ -26,12 +26,10 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Restore standard interactive settings
+    # Fix settings.json - removed all invalid keys
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
-  "approvalMode": "default",
-  "screenReader": false,
-  "telemetry": "off"
+  "approvalMode": "default"
 }
 EOF
 
@@ -79,22 +77,25 @@ start_web_terminal() {
     local node_bin=$(which node)
     local gemini_bin=$(which gemini)
     
-    # Internal trace capture script
+    # Improved trace capture script
     cat > /usr/local/bin/gemini-wrapper << 'EOF'
 #!/bin/bash
-# Run Gemini and capture the internal trace on exit
-/usr/bin/node /usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk "$@"
+# Run Gemini with fixed memory stack and capture trace
+/usr/bin/node --stack-size=10000 --report-on-fatalerror --report-directory=/config /usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk "$@"
 EXIT_CODE=$?
 echo ""
 echo "------------------------------------------------"
 echo "Gemini session finished with Exit Code: $EXIT_CODE"
-echo "Attempting to extract internal diagnostic trace..."
-LATEST_LOG=$(ls -t /data/home/.gemini/logs/*.log 2>/dev/null | head -n 1)
-if [ -n "$LATEST_LOG" ]; then
-    cp "$LATEST_LOG" /config/gemini_internal_trace.log
-    echo "Internal trace saved to: /config/gemini_internal_trace.log"
+echo "Searching for internal diagnostic logs..."
+# Search globally within the data directory for any .log files created by gemini
+INTERNAL_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -5 | head -n 1)
+if [ -n "$INTERNAL_LOG" ]; then
+    cp "$INTERNAL_LOG" /config/gemini_internal_trace.log
+    echo "Internal trace extracted to: /config/gemini_internal_trace.log"
+    echo "--- TRACE END ---"
+    tail -n 20 /config/gemini_internal_trace.log
 else
-    echo "No internal Gemini logs were found."
+    echo "No internal logs were found in the last 5 minutes."
 fi
 echo "------------------------------------------------"
 EOF
@@ -105,7 +106,7 @@ EOF
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
-    # Run ttyd without ping-timeout (not supported in this version)
+    # Run ttyd
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -117,14 +118,11 @@ EOF
         bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; gemini-wrapper ${debug_flag}; echo ''; echo 'Gemini session ended.'; exec bash"
 }
 
-# Setup ha-mcp (Home Assistant MCP Server)
+# Setup ha-mcp
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
-        # Force API key export for MCP setup
-        if [ -n "$GEMINI_API_KEY" ]; then
-            export GEMINI_API_KEY="$GEMINI_API_KEY"
-        fi
+        [ -n "$GEMINI_API_KEY" ] && export GEMINI_API_KEY="$GEMINI_API_KEY"
         /opt/scripts/setup-ha-mcp.sh || true
     fi
 }
