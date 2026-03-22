@@ -33,8 +33,8 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Node.js stability - increased stack size specifically for recursive directory scans
-    export NODE_OPTIONS="--max-old-space-size=8192 --stack-size=10000 --no-warnings"
+    # Use only universally allowed Node options here
+    export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
     export NODE_NO_WARNINGS=1
     export UV_THREADPOOL_SIZE=64
     
@@ -50,7 +50,7 @@ init_environment() {
         fi
     fi
 
-    # Ensure .geminiignore exists and is very aggressive
+    # Ensure .geminiignore exists
     if [ ! -f "/config/.geminiignore" ]; then
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
@@ -67,10 +67,6 @@ www/
 blueprints/
 *.db
 *.log
-*.png
-*.jpg
-*.gz
-*.zip
 EOF
     fi
 }
@@ -86,31 +82,35 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    # Create a hidden log directory for the user that Gemini will ignore
-    mkdir -p "/config/.gemini_logs"
+    # Determine binary paths
+    local node_bin=$(which node)
+    local gemini_bin=$(which gemini)
     local debug_log="/config/.gemini_logs/last_session.log"
+    mkdir -p "/config/.gemini_logs"
 
     # Kill any zombie sessions
     tmux kill-session -t gemini 2>/dev/null || true
 
-    # Start Gemini in a detached background session
-    # --experimental-acp false: Stops the background scanning which causes crashes
-    # --raw-output: Prevents buffer corruption
-    local gemini_cmd="gemini --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
+    local auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
+    local gemini_debug=$(bashio::config 'gemini_debug' 'false')
+    local debug_flag=""
+    [ "$gemini_debug" = "true" ] && debug_flag="--debug"
+
+    # Launch Gemini via explicit node command to bypass NODE_OPTIONS restrictions on stack-size
+    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk ${debug_flag}"
     
     bashio::log.info "Launching Gemini background worker..."
-    # We force a specific terminal type and increase history for tmux
     tmux new-session -d -s gemini "export TERM=xterm-256color; ${gemini_cmd} 2> ${debug_log}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
-    # ttyd now just attaches to the background session.
-    # We enabled reconnection and standard clipboard options.
+    # ttyd configuration with forced clipboard support
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
         --ping-interval 10 \
-        --client-option "enableReconnect=true" \
-        --client-option "copyOnSelect=true" \
+        --client-option enableReconnect=true \
+        --client-option copyOnSelect=true \
+        --client-option enableClipboard=true \
         bash -c "echo -e '\033[0;36mAttaching to Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 

@@ -39,6 +39,13 @@
   - Forced stable interactive mode to prevent V8 engine assertion failures.
 
 
+## 2.2.2
+- **🛠️ Fixed Startup & Clipboard**
+  - Fixed "stack-size not allowed" error by passing the flag directly to the Node binary.
+  - Forced clipboard support with `enableClipboard=true` to fix copy issues.
+  - Improved background launch reliability.
+
+
 ## 2.2.1
 - **🛠️ UI & Core Stability**
   - Fixed standard copy/paste support by enabling `copyOnSelect` and using a native theme.
