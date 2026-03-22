@@ -53,6 +53,13 @@
   - Improved background launch reliability.
 
 
+## 2.3.0
+- **🛠️ Interactivity & Config Fix**
+  - Fixed "No input provided via stdin" by switching to passive tmux logging.
+  - Fixed invalid `settings.json` format causing startup errors.
+  - Maintains full crash diagnostics in `/config/gemini_crash.log` without breaking the TTY.
+
+
 ## 2.2.9
 - **🛠️ Fix Startup Error**
   - Removed invalid `autocomplete` arguments that prevented Gemini from starting.

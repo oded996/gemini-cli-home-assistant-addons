@@ -26,12 +26,11 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Force stable settings - removed invalid 'autocomplete' key
+    # Clean settings.json - removed problematic telemetry key
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "yolo",
-  "screenReader": false,
-  "telemetry": "off"
+  "screenReader": false
 }
 EOF
 
@@ -84,20 +83,16 @@ start_web_terminal() {
     local gemini_bin=$(which gemini)
     local crash_log="/config/gemini_crash.log"
 
-    # Create a dedicated wrapper script
-    # Removed invalid --no-autocomplete and updated --experimental-acp to --acp
-    cat > /usr/local/bin/gemini-witness << EOF
-#!/bin/bash
-echo "--- NEW SESSION: \$(date) ---" >> ${crash_log}
-${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} --sandbox false --acp false --approval-mode yolo --raw-output --accept-raw-output-risk "\$@" 2>&1 | tee -a ${crash_log}
-echo "--- SESSION ENDED: Code \$? AT \$(date) ---" >> ${crash_log}
-EOF
-    chmod +x /usr/local/bin/gemini-witness
-
     tmux kill-session -t gemini 2>/dev/null || true
 
-    bashio::log.info "Launching Gemini under Witness mode..."
-    tmux new-session -d -s gemini "tmux set-option -g mouse off; tmux set-option -g history-limit 50000; export TERM=xterm-256color; gemini-witness; echo ''; echo 'Gemini died. Check /config/gemini_crash.log'; exec bash"
+    # Stability Flags:
+    # --acp false: Stop background scanning
+    # --raw-output: Prevent buffer corruption
+    local gemini_cmd="${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} --sandbox false --acp false --approval-mode yolo --raw-output --accept-raw-output-risk"
+    
+    bashio::log.info "Launching Gemini in Passive Logging mode..."
+    # We use 'pipe-pane' inside tmux to capture output without breaking interactivity
+    tmux new-session -d -s gemini "export TERM=xterm-256color; tmux pipe-pane -o 'cat >> ${crash_log}'; ${gemini_cmd}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
     exec ttyd \
         --port "${port}" \
@@ -108,10 +103,10 @@ EOF
         --client-option copyOnSelect=true \
         --client-option allowContextMenu=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mConnecting to witness session...\033[0m'; sleep 1; tmux attach-session -t gemini"
+        bash -c "echo -e '\033[0;36mAttaching to stable Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
-# Setup ha-mcp
+# Setup ha-mcp (Home Assistant MCP Server)
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
