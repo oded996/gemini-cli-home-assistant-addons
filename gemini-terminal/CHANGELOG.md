@@ -53,6 +53,13 @@
   - Improved background launch reliability.
 
 
+## 2.2.5
+- **🎨 UI Restoration & High Stability**
+  - Restored full colors and the dark "Terracotta" theme.
+  - Added `--screen-reader` mode: disables unstable background flickering while keeping full functionality.
+  - Fixed copy/paste support and restored standard browser text selection.
+
+
 ## 2.2.4
 - **🛠️ UI & Compatibility Fix**
   - Fixed "Approval Crash" by forcing `TERM=vt100` (Legacy Mode). This disables unstable mouse-UI popups.
