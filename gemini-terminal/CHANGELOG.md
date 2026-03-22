@@ -53,6 +53,12 @@
   - Improved background launch reliability.
 
 
+## 2.2.9
+- **🛠️ Fix Startup Error**
+  - Removed invalid `autocomplete` arguments that prevented Gemini from starting.
+  - Updated deprecated `--experimental-acp` to `--acp`.
+
+
 ## 2.2.8
 - **🔍 Definitve Diagnostic Update (The Witness)**
   - Implemented `gemini-witness` wrapper to capture all output and exit codes directly to `/config/gemini_crash.log`.

@@ -26,14 +26,12 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Force stable settings
+    # Force stable settings - removed invalid 'autocomplete' key
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "yolo",
   "screenReader": false,
-  "telemetry": "off",
-  "experimentalAcp": false,
-  "autocomplete": false
+  "telemetry": "off"
 }
 EOF
 
@@ -52,12 +50,11 @@ EOF
     fi
 
     # CRITICAL: Prepare the Crash Witness log and ensure it is IGNORED by Gemini
-    # This prevents the recursive scan loop
     local crash_log="/config/gemini_crash.log"
     touch "$crash_log"
     chmod 666 "$crash_log"
 
-    # Force strict ignore rules - including the crash log itself!
+    # Force strict ignore rules
     cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
@@ -87,11 +84,12 @@ start_web_terminal() {
     local gemini_bin=$(which gemini)
     local crash_log="/config/gemini_crash.log"
 
-    # Create a dedicated wrapper script that survives even if Gemini dies
+    # Create a dedicated wrapper script
+    # Removed invalid --no-autocomplete and updated --experimental-acp to --acp
     cat > /usr/local/bin/gemini-witness << EOF
 #!/bin/bash
 echo "--- NEW SESSION: \$(date) ---" >> ${crash_log}
-${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} --sandbox false --experimental-acp false --no-autocomplete --approval-mode yolo --raw-output --accept-raw-output-risk "\$@" 2>&1 | tee -a ${crash_log}
+${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} --sandbox false --acp false --approval-mode yolo --raw-output --accept-raw-output-risk "\$@" 2>&1 | tee -a ${crash_log}
 echo "--- SESSION ENDED: Code \$? AT \$(date) ---" >> ${crash_log}
 EOF
     chmod +x /usr/local/bin/gemini-witness
@@ -99,7 +97,6 @@ EOF
     tmux kill-session -t gemini 2>/dev/null || true
 
     bashio::log.info "Launching Gemini under Witness mode..."
-    # Disable mouse to allow browser selection, set history high
     tmux new-session -d -s gemini "tmux set-option -g mouse off; tmux set-option -g history-limit 50000; export TERM=xterm-256color; gemini-witness; echo ''; echo 'Gemini died. Check /config/gemini_crash.log'; exec bash"
 
     exec ttyd \
@@ -114,7 +111,7 @@ EOF
         bash -c "echo -e '\033[0;36mConnecting to witness session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
-# Setup ha-mcp (Home Assistant MCP Server)
+# Setup ha-mcp
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
