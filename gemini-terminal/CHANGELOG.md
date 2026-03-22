@@ -39,6 +39,14 @@
   - Forced stable interactive mode to prevent V8 engine assertion failures.
 
 
+## 2.1.0
+- **🚀 Stability Mega-Fix**
+  - Re-integrated critical stability flags discovered during 1.x testing into the stable 2.x foundation.
+  - Added `FSWATCH_BACKEND=poll` to prevent file watcher crashes in the large Home Assistant `/config` directory.
+  - Disabled unstable background features (`--experimental-acp false`) and output sanitization (`--raw-output`) to prevent engine panic.
+  - Increased thread pool size for better performance during complex tasks.
+
+
 ## 2.0.6
 - **🔍 Deep Screen Capture**
   - Implemented `tmux pipe-pane` to capture every character seen on the screen to `/config/gemini_screen.log`.

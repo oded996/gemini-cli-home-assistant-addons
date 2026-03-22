@@ -39,9 +39,13 @@ init_environment() {
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     
-    # Critical for Node.js stability in containers
-    export NODE_OPTIONS="--max-old-space-size=4096"
+    # Critical stability fixes for Node.js in containers
+    export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
+    export UV_THREADPOOL_SIZE=64
     export PYTHONUNBUFFERED=1
+    
+    # Mandatory fix for file watcher crashes in HA /config directory
+    export FSWATCH_BACKEND="poll"
 
     # Set Gemini API key if provided in configuration
     if bashio::config.has_value 'gemini_api_key'; then
@@ -63,16 +67,28 @@ init_environment() {
         chmod 644 "$data_home/.tmux.conf"
     fi
 
-    # Ensure .geminiignore exists
+    # Ensure .geminiignore exists to prevent massive scans
     if [ ! -f "/config/.geminiignore" ]; then
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
 backups/
 addons/
+deps/
+local/
+share/
+node_modules/
+.git/
+.gemini/
+gemini_*.log
 *.db
 *.db-shm
 *.db-wal
 *.log
+*.png
+*.jpg
+*.jpeg
+*.gz
+*.zip
 EOF
     fi
 }
@@ -93,7 +109,6 @@ migrate_legacy_auth_files() {
 # Install required tools
 install_tools() {
     bashio::log.info "Installing additional tools..."
-    # Ensure all required packages are present
     apk add --no-cache ttyd jq curl tmux coreutils util-linux
 }
 
@@ -118,7 +133,6 @@ start_web_terminal() {
         while true; do
             if [ -f "$screen_log" ]; then
                 tail -n 0 -F "$screen_log" | while read -r line; do
-                    # Print everything except empty lines to the HA log
                     if [ -n "$line" ]; then echo "[Gemini-Screen] $line"; fi
                 done
             fi
@@ -126,9 +140,12 @@ start_web_terminal() {
         done
     ) &
 
-    # Launch tmux and IMMEDIATELY start piping the pane content to the screen log
-    # We wrap it in a bash script to ensure pipe-pane starts as soon as gemini does
-    local launch_command="tmux -u new-session -s gemini \"tmux pipe-pane -o 'cat >> ${screen_log}'; gemini ${debug_flag} --sandbox false; echo 'Gemini session ended.'; exec bash\""
+    # Launch Gemini with all stability flags re-integrated
+    # --experimental-acp false: Stop background flickering
+    # --raw-output: Prevent sanitization crashes
+    # --sandbox false: Standard for containers
+    local gemini_cmd="gemini ${debug_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
+    local launch_command="tmux -u new-session -s gemini \"tmux pipe-pane -o 'cat >> ${screen_log}'; ${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
 
     exec ttyd \
         --port "${port}" \
