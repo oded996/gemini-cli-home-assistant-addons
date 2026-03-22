@@ -276,30 +276,31 @@ generate_ha_context() {
 # Determine Gemini launch command based on configuration
 get_gemini_launch_command() {
     local auto_launch_gemini
+    local cmd
 
-    # Get configuration value, default to true for backward compatibility
+    # Get configuration value, default to true
     auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
 
-    # Prepend welcome banner if available (runs inside ttyd, user-visible)
+    # Prepend welcome banner if available
     local welcome_prefix=""
     if [ -f /usr/local/bin/welcome ]; then
         welcome_prefix="welcome; "
     fi
 
     if [ "$auto_launch_gemini" = "true" ]; then
-        # Use tmux for session persistence - attach to existing or create new
-        echo "${welcome_prefix}tmux new-session -A -s gemini 'gemini'"
+        # Use tmux for session persistence
+        cmd="tmux new-session -A -s gemini 'gemini'"
     else
-        # Session picker manages its own tmux sessions internally,
-        # so do NOT wrap it in tmux (that would cause nested tmux errors)
         if [ -f /usr/local/bin/gemini-session-picker ]; then
-            echo "${welcome_prefix}/usr/local/bin/gemini-session-picker"
+            cmd="/usr/local/bin/gemini-session-picker"
         else
-            # Fallback if session picker is missing
             bashio::log.warning "Session picker not found, falling back to auto-launch"
-            echo "${welcome_prefix}tmux new-session -A -s gemini 'gemini'"
+            cmd="tmux new-session -A -s gemini 'gemini'"
         fi
     fi
+
+    # Add a fallback shell so the terminal doesn't close on error
+    echo "${welcome_prefix}${cmd} || (echo 'Command failed or exited. Dropping to shell...'; bash)"
 }
 
 
@@ -372,6 +373,13 @@ main() {
 
     # Run diagnostics first (especially helpful for VirtualBox issues)
     run_health_check
+
+    # Log command availability
+    if command -v gemini > /dev/null; then
+        bashio::log.info "Gemini command found at: $(which gemini)"
+    else
+        bashio::log.error "Gemini command NOT FOUND in PATH ($PATH)"
+    fi
 
     init_environment
     install_tools
