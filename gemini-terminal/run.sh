@@ -69,16 +69,20 @@ init_environment() {
 
     # Ensure .geminiignore exists to prevent massive scans
     if [ ! -f "/config/.geminiignore" ]; then
+        bashio::log.info "Creating default /config/.geminiignore..."
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
+.git/
+.gemini/
 backups/
 addons/
 deps/
 local/
 share/
+tts/
+www/
+blueprints/
 node_modules/
-.git/
-.gemini/
 gemini_*.log
 *.db
 *.db-shm
@@ -89,6 +93,9 @@ gemini_*.log
 *.jpeg
 *.gz
 *.zip
+*.bin
+*.so
+*.exe
 EOF
     fi
 }
@@ -145,7 +152,7 @@ start_web_terminal() {
         done
     ) &
 
-    # Stable Gemini command flags
+    # Launch Gemini with even more aggressive stability flags
     local gemini_cmd="gemini ${debug_flag} ${yolo_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
     local launch_command="tmux -u new-session -s gemini \"tmux pipe-pane -o 'cat >> ${screen_log}'; ${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
 
