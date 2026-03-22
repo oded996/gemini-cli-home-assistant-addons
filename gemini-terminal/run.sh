@@ -40,7 +40,7 @@ init_environment() {
     export GEMINI_HOME="/data"
     
     # Critical stability fixes for Node.js in containers
-    export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
+    export NODE_OPTIONS="--max-old-space-size=16384 --no-warnings"
     export UV_THREADPOOL_SIZE=64
     export PYTHONUNBUFFERED=1
     

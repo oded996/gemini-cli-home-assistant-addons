@@ -63,8 +63,8 @@ auth_api: true
 startup: services
 
 # Resource management
-memory: 4G
-cpu: 4.0
+memory: 16G
+cpu: 8.0
 
 # Web UI access URL
 webui: http://[HOST]:[PORT:7682]/
