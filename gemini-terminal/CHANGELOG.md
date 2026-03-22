@@ -33,6 +33,13 @@
   - Added default `.geminiignore` to skip large database files, improving directory scan speed.
 
 
+## 2.0.6
+- **🔍 Deep Screen Capture**
+  - Implemented `tmux pipe-pane` to capture every character seen on the screen to `/config/gemini_screen.log`.
+  - These "Screen Logs" are automatically streamed to the Home Assistant "Logs" tab for debugging.
+  - This method is non-invasive and cannot cause blank screens or process hangs.
+
+
 ## 2.0.0
 - **🚀 Stable Release Redux**
   - Reverted to the highly stable v1.1.5 foundation to eliminate persistent crashes.

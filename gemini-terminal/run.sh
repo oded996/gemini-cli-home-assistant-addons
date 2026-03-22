@@ -57,15 +57,14 @@ init_environment() {
     # Migrate any existing authentication files from legacy locations
     migrate_legacy_auth_files "$gemini_config_dir"
 
-    # Install tmux configuration to user home directory
+    # Install tmux configuration
     if [ -f "/opt/scripts/tmux.conf" ]; then
         cp /opt/scripts/tmux.conf "$data_home/.tmux.conf"
         chmod 644 "$data_home/.tmux.conf"
     fi
 
-    # Ensure .geminiignore exists to prevent massive scans
+    # Ensure .geminiignore exists
     if [ ! -f "/config/.geminiignore" ]; then
-        bashio::log.info "Creating default /config/.geminiignore..."
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
 backups/
@@ -75,12 +74,6 @@ addons/
 *.db-wal
 *.log
 EOF
-    fi
-
-    # Log system limits to standard logs
-    bashio::log.info "Node version: $(node --version)"
-    if [ -f /proc/sys/fs/inotify/max_user_watches ]; then
-        bashio::log.info "Inotify limit: $(cat /proc/sys/fs/inotify/max_user_watches)"
     fi
 }
 
@@ -100,10 +93,8 @@ migrate_legacy_auth_files() {
 # Install required tools
 install_tools() {
     bashio::log.info "Installing additional tools..."
-    if ! apk add --no-cache ttyd jq curl tmux coreutils; then
-        bashio::log.error "Failed to install required tools"
-        exit 1
-    fi
+    # Ensure all required packages are present
+    apk add --no-cache ttyd jq curl tmux coreutils util-linux
 }
 
 # Start main web terminal
@@ -111,37 +102,33 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting web terminal on port ${port}..."
 
-    local launch_command
     local auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
     local gemini_debug=$(bashio::config 'gemini_debug' 'false')
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
-    if [ "$auto_launch_gemini" = "true" ]; then
-        launch_command="tmux -u new-session -A -s gemini \"gemini ${debug_flag} --sandbox false\""
-    else
-        if [ -f /usr/local/bin/gemini-session-picker ]; then
-            launch_command="/usr/local/bin/gemini-session-picker"
-        else
-            launch_command="tmux -u new-session -A -s gemini \"gemini ${debug_flag} --sandbox false\""
-        fi
-    fi
+    # Create a fresh screen log
+    local screen_log="/config/gemini_screen.log"
+    echo "--- Terminal Start: $(date) ---" > "$screen_log"
+    chmod 666 "$screen_log"
 
-    # Background Log Streamer: Pipes Gemini's internal logs directly to Add-on Logs
+    # Background Screen Streamer: Pipes everything seen in tmux to Add-on Logs
     (
-        local log_dir="/data/home/.gemini/logs"
-        mkdir -p "$log_dir"
+        sleep 5 # Wait for tmux to initialize
         while true; do
-            local latest_log=$(ls -t "$log_dir"/*.log 2>/dev/null | head -n 1)
-            if [ -n "$latest_log" ]; then
-                # Stream the file and prefix it for clarity in the UI
-                tail -n 0 -F "$latest_log" | while read -r line; do
-                    echo "[Gemini-Internal] $line"
+            if [ -f "$screen_log" ]; then
+                tail -n 0 -F "$screen_log" | while read -r line; do
+                    # Print everything except empty lines to the HA log
+                    if [ -n "$line" ]; then echo "[Gemini-Screen] $line"; fi
                 done
             fi
             sleep 5
         done
     ) &
+
+    # Launch tmux and IMMEDIATELY start piping the pane content to the screen log
+    # We wrap it in a bash script to ensure pipe-pane starts as soon as gemini does
+    local launch_command="tmux -u new-session -s gemini \"tmux pipe-pane -o 'cat >> ${screen_log}'; gemini ${debug_flag} --sandbox false; echo 'Gemini session ended.'; exec bash\""
 
     exec ttyd \
         --port "${port}" \
@@ -149,7 +136,7 @@ start_web_terminal() {
         --writable \
         --ping-interval 5 \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mInitializing Gemini Terminal...\033[0m'; ${launch_command}; echo ''; echo 'Gemini session ended. Dropping to bash...'; exec bash"
+        bash -c "echo -e '\033[0;36mConnecting to Gemini...\033[0m'; ${launch_command}"
 }
 
 # Setup ha-mcp (Home Assistant MCP Server)
@@ -162,7 +149,7 @@ setup_ha_mcp() {
 
 # Main execution
 main() {
-    bashio::log.info "Initializing Gemini Terminal add-on..."
+    bashio::log.info "Initializing Gemini Terminal..."
     init_environment
     install_tools
     setup_ha_mcp

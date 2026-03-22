@@ -21,7 +21,8 @@ RUN apk add --no-cache \
     tree \
     tmux \
     yq \
-    coreutils
+    coreutils \
+    util-linux
 
 # Install Gemini CLI via npm (requires build tools for native modules like tree-sitter)
 RUN apk add --no-cache --virtual .build-deps \
