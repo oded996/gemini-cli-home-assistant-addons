@@ -39,8 +39,9 @@ init_environment() {
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     
-    # Force disable telemetry and background checks
+    # Force disable all background telemetry and noise
     export GEMINI_TELEMETRY_DISABLED=true
+    export GEMINI_TELEMETRY=off
     export GOOGLE_ANALYTICS_ID_DISABLED=true
     
     # Stability fixes for Node.js
@@ -62,13 +63,16 @@ init_environment() {
         fi
     fi
 
-    # Ensure .geminiignore is highly restrictive to prevent hangs
-    # User can edit this later if they need to see more
+    # Ensure .geminiignore is highly restrictive
+    # We explicitly include our own log files to prevent recursive scanning
     if [ ! -f "/config/.geminiignore" ]; then
+        bashio::log.info "Creating default /config/.geminiignore..."
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
 .gemini/
+gemini-logs/
+gemini_*.log
 backups/
 addons/
 deps/
@@ -94,6 +98,7 @@ EOF
 # One-time migration of existing authentication files
 migrate_legacy_auth_files() {
     local target_dir="$1"
+    local migrated=false
     local legacy_locations=("/root/.config/google" "/root/.google" "/config/gemini-config" "/tmp/gemini-config")
     for legacy_path in "${legacy_locations[@]}"; do
         if [ -d "$legacy_path" ] && [ "$(ls -A "$legacy_path" 2>/dev/null)" ]; then
@@ -124,6 +129,7 @@ start_web_terminal() {
     [ "$gemini_yolo" = "true" ] && yolo_flag="--approval-mode yolo"
 
     # Stable Gemini command flags
+    # We add --experimental-acp false to stop background flickering
     local gemini_cmd="gemini ${debug_flag} ${yolo_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
     local launch_command="tmux -u new-session -s gemini \"${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
 
