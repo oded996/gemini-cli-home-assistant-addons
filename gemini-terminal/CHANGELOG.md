@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.1.5
+## 2.0.0
+- **🚀 Stable Release Redux**
+  - Reverted to the highly stable v1.1.5 foundation to eliminate persistent crashes.
+  - Added `gemini_debug` setting to toggle the `--debug` flag.
+  - Integrated internal Gemini logs into the Home Assistant Add-on logs for easier troubleshooting.
+
+## 1.1.0
+
 - **🛠️ Fixes**
   - Fixed "WebSocket not authenticated" error for Home Assistant MCP tools.
   - Upgraded add-on permissions to "admin" for full entity and dashboard control.

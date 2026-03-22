@@ -281,23 +281,30 @@ generate_ha_context() {
 # Determine Gemini launch command based on configuration
 get_gemini_launch_command() {
     local auto_launch_gemini
+    local gemini_debug
+    local debug_flag=""
     local cmd
 
-    # Get configuration value, default to true
+    # Get configuration values
     auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
+    gemini_debug=$(bashio::config 'gemini_debug' 'false')
+
+    if [ "$gemini_debug" = "true" ]; then
+        debug_flag="--debug"
+    fi
 
     # Loading message to show while tmux/gemini starts
     local loading_msg="echo -e '\033[0;36mInitializing Gemini Terminal...\033[0m'; "
 
     if [ "$auto_launch_gemini" = "true" ]; then
         # Use tmux for session persistence
-        cmd="tmux -u new-session -A -s gemini 'gemini'"
+        cmd="tmux -u new-session -A -s gemini \"gemini ${debug_flag}\""
     else
         if [ -f /usr/local/bin/gemini-session-picker ]; then
             cmd="/usr/local/bin/gemini-session-picker"
         else
             bashio::log.warning "Session picker not found, falling back to auto-launch"
-            cmd="tmux -u new-session -A -s gemini 'gemini'"
+            cmd="tmux -u new-session -A -s gemini \"gemini ${debug_flag}\""
         fi
     fi
 
@@ -369,6 +376,38 @@ setup_ha_mcp() {
     fi
 }
 
+# Tail Gemini logs to add-on logs if debug is enabled
+tail_gemini_logs() {
+    local gemini_debug
+    gemini_debug=$(bashio::config 'gemini_debug' 'false')
+
+    if [ "$gemini_debug" = "true" ]; then
+        bashio::log.info "Gemini debug enabled. Tailing internal logs..."
+        # Try common log locations
+        local log_dirs=(
+            "$HOME/.gemini/logs"
+            "$GEMINI_CONFIG_DIR/logs"
+        )
+        
+        for log_dir in "${log_dirs[@]}"; do
+            mkdir -p "$log_dir"
+            # Watch for new files in log_dir and tail them
+            (
+                while true; do
+                    local latest_log=$(ls -t "$log_dir"/*.log 2>/dev/null | head -n 1)
+                    if [ -n "$latest_log" ]; then
+                        bashio::log.info "Tailing latest log: $latest_log"
+                        tail -f "$latest_log" | while read -r line; do
+                            echo "[Gemini Debug] $line"
+                        done
+                    fi
+                    sleep 5
+                done
+            ) &
+        done
+    fi
+}
+
 # Main execution
 main() {
     bashio::log.info "Initializing Gemini Terminal add-on..."
@@ -389,6 +428,7 @@ main() {
     install_persistent_packages
     generate_ha_context
     setup_ha_mcp
+    tail_gemini_logs
     start_web_terminal
 }
 
