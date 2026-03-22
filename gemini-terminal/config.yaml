@@ -1,0 +1,62 @@
+---
+name: "Gemini Terminal"
+description: "Terminal interface for Google's Gemini CLI with persistent auth and packages"
+version: "1.0.0"
+slug: "gemini_terminal"
+init: false
+
+# Supported architectures
+arch:
+  - aarch64
+  - amd64
+  - armv7
+
+# External resources
+url: "https://github.com/google/gemini-cli"
+
+# Web interface configuration
+ingress: true
+ingress_port: 7681
+panel_icon: mdi:account-circle-outline
+panel_title: "Gemini Terminal"
+panel_admin: true
+
+# Port configuration
+ports:
+  7681/tcp: 7681
+ports_description:
+  7681/tcp: "Web terminal (not required for ingress)"
+
+# Add-on configuration options
+options:
+  gemini_api_key: ""
+  auto_launch_gemini: true
+  ha_smart_context: true
+  enable_ha_mcp: true
+  persistent_apk_packages: []
+  persistent_pip_packages: []
+schema:
+  gemini_api_key: password?
+  auto_launch_gemini: bool?
+  ha_smart_context: bool?
+  enable_ha_mcp: bool?
+  persistent_apk_packages:
+    - str
+  persistent_pip_packages:
+    - str
+
+# Volume mappings for file access
+map:
+  - config:rw    # Access to Home Assistant configuration files
+
+# API access for Home Assistant integration
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+auth_api: true
+
+# Service startup configuration
+startup: services
+
+# Web UI access URL
+webui: http://[HOST]:[PORT:7681]/
