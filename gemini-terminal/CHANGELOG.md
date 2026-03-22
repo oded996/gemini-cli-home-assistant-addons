@@ -53,6 +53,14 @@
   - Improved background launch reliability.
 
 
+## 2.2.8
+- **🔍 Definitve Diagnostic Update (The Witness)**
+  - Implemented `gemini-witness` wrapper to capture all output and exit codes directly to `/config/gemini_crash.log`.
+  - Added strict isolation rules to prevent Gemini from reading its own logs.
+  - Enabled native Node.js crash reporting (`.json` reports in `/config`).
+  - Improved browser copy support with `allowContextMenu=true`.
+
+
 ## 2.2.7
 - **✨ UX & Native Experience Update**
   - Removed annoying "Screen Reader" mode while maintaining stability.

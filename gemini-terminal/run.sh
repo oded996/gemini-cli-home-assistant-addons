@@ -26,7 +26,7 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Force stable settings (No screen reader, No experimental features)
+    # Force stable settings
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "yolo",
@@ -51,15 +51,19 @@ EOF
         fi
     fi
 
-    # Cleanup dangerous folders
-    rm -rf /config/gemini-logs /config/.gemini_logs 2>/dev/null || true
+    # CRITICAL: Prepare the Crash Witness log and ensure it is IGNORED by Gemini
+    # This prevents the recursive scan loop
+    local crash_log="/config/gemini_crash.log"
+    touch "$crash_log"
+    chmod 666 "$crash_log"
 
-    # Force strict ignore rules
-    if [ ! -f "/config/.geminiignore" ]; then
-        cat > "/config/.geminiignore" << 'EOF'
+    # Force strict ignore rules - including the crash log itself!
+    cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
 .gemini*/
+gemini_crash.log
+gemini_debug.log
 backups/
 addons/
 deps/
@@ -67,10 +71,11 @@ local/
 share/
 tts/
 www/
+blueprints/
+node_modules/
 *.db
 *.log
 EOF
-    fi
 }
 
 # Start web terminal
@@ -78,27 +83,25 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    # Determine binary paths
     local node_bin=$(which node)
     local gemini_bin=$(which gemini)
-    local debug_log="/data/gemini_last_run.log"
+    local crash_log="/config/gemini_crash.log"
 
-    # Kill any zombie sessions
+    # Create a dedicated wrapper script that survives even if Gemini dies
+    cat > /usr/local/bin/gemini-witness << EOF
+#!/bin/bash
+echo "--- NEW SESSION: \$(date) ---" >> ${crash_log}
+${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} --sandbox false --experimental-acp false --no-autocomplete --approval-mode yolo --raw-output --accept-raw-output-risk "\$@" 2>&1 | tee -a ${crash_log}
+echo "--- SESSION ENDED: Code \$? AT \$(date) ---" >> ${crash_log}
+EOF
+    chmod +x /usr/local/bin/gemini-witness
+
     tmux kill-session -t gemini 2>/dev/null || true
 
-    # Stability Flags:
-    # --no-autocomplete: Stops the background flickering
-    # --experimental-acp false: Stops context protocol noise
-    # --raw-output: Prevents buffer corruption
-    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --experimental-acp false --no-autocomplete --approval-mode yolo --raw-output --accept-raw-output-risk"
-    
-    bashio::log.info "Launching Gemini background worker..."
-    # IMPORTANT: We disable mouse mode (-v) to allow browser text selection (COPY/PASTE)
-    tmux new-session -d -s gemini "tmux set-option -g mouse off; export TERM=xterm-256color; ${gemini_cmd} 2> ${debug_log}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
+    bashio::log.info "Launching Gemini under Witness mode..."
+    # Disable mouse to allow browser selection, set history high
+    tmux new-session -d -s gemini "tmux set-option -g mouse off; tmux set-option -g history-limit 50000; export TERM=xterm-256color; gemini-witness; echo ''; echo 'Gemini died. Check /config/gemini_crash.log'; exec bash"
 
-    # ttyd configuration:
-    # enableReconnect=true: handle proxy flickers
-    # copyOnSelect=true: helper for browsers
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -106,11 +109,12 @@ start_web_terminal() {
         --ping-interval 10 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
+        --client-option allowContextMenu=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mAttaching to persistent Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
+        bash -c "echo -e '\033[0;36mConnecting to witness session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
-# Setup ha-mcp
+# Setup ha-mcp (Home Assistant MCP Server)
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
