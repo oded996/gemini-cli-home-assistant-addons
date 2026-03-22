@@ -1,151 +1,48 @@
-# Gemini Terminal Add-on: Interactive Session Picker - Development Status
+# Gemini Terminal Add-on - Development Status
 
 ## Project Overview
-Implementing an interactive session picker feature for the Gemini Terminal Home Assistant add-on that allows users to choose how to launch Gemini (new session, continue, resume, custom command, or shell access).
+Refitting the Home Assistant add-on to support Google's Gemini CLI, including interactive session management, Home Assistant MCP integration, and automated context generation.
 
-## Current Status: 🟡 **90% Complete - Authentication Persistence Issue**
+## Current Status: 🟢 **Stable Release (v1.1.0)**
 
 ### ✅ **Completed Tasks**
 
 #### Core Implementation
-- ✅ **Session Picker Script** (`gemini-session-picker.sh`)
-  - Interactive menu with 6 options (new, continue, resume, custom, shell, exit)
-  - Proper error handling and user input validation
-  - Clean UI with emojis and banner
-  - All menu options functional
-
-- ✅ **Configuration System** (`config.yaml`)
-  - Added `auto_launch_gemini` boolean option (defaults to `true`)
-  - Maintains backward compatibility
-  - Version bumped to `1.1.0-dev`
-
-- ✅ **Startup Logic** (`run.sh`)
-  - Conditional launch based on configuration
-  - Fallback mechanisms for missing components
-  - Simplified credential management (removed complex system)
+- ✅ **Gemini CLI Integration**: Successfully installed and configured `@google/gemini-cli`.
+- ✅ **Port 7682**: Updated default port to avoid conflicts.
+- ✅ **API Key Support**: Added `gemini_api_key` to add-on configuration for headless login.
+- ✅ **Alpine coreutils**: Fixed `env -S` shebang issues.
+- ✅ **Session Persistence**: Built-in `tmux` support for conversation persistence.
+- ✅ **Home Assistant MCP**: Pre-installed and configured `ha-mcp` for natural language control.
+- ✅ **Smart Context**: Automated generation of `GEMINI.md` for AI system awareness.
 
 #### Testing & Validation
-- ✅ **Static Analysis**: All shell scripts pass syntax validation
-- ✅ **Container Build**: Successfully builds with Podman
-- ✅ **Auto-launch Mode**: Backward compatibility confirmed
-- ✅ **Session Picker**: Interactive menu works correctly
-- ✅ **OAuth Authentication**: Gemini Code's native authentication flows work
+- ✅ **Authentication**: Verified both OAuth and API key authentication flows.
+- ✅ **MCP Integration**: Verified `/mcp list` shows active Home Assistant connection.
+- ✅ **Persistence**: Verified session data and credentials survive container restarts.
+- ✅ **Multi-Arch**: Validated build configuration for amd64, aarch64, and armv7.
 
-#### Code Quality
-- ✅ **Simplified Architecture**: Removed complex credential management system
-- ✅ **Clean Implementation**: Let Gemini Code handle authentication natively
-- ✅ **Proper Error Handling**: Graceful fallbacks and user feedback
+### 🎯 **Future Roadmap**
 
-### 🔴 **Critical Issue: Authentication Persistence**
+#### 1. **Visual Branding**
+- [ ] Create custom Gemini-branded icon and logo (currently using placeholder colorful star).
+- [ ] Add more screenshots of the stable UI to documentation.
 
-**Problem**: Gemini Code's OAuth authentication doesn't persist across container restarts.
+#### 2. **Enhanced Context**
+- [ ] Allow customization of `ha-context` frequency or detail level via configuration.
+- [ ] Add support for custom user-provided context files.
 
-**Evidence**: 
-- First run: OAuth works perfectly
-- Container restart: Authentication lost, requires re-authentication
-
-**Root Cause**: Unknown - need to investigate where Gemini Code actually stores OAuth tokens.
-
-### 🎯 **Next Steps (Priority Order)**
-
-#### 1. **CRITICAL: Investigate Gemini Code Credential Storage** (High Priority)
-**Objective**: Determine where Gemini Code stores OAuth tokens after successful authentication.
-
-**Investigation Commands**:
-```bash
-# After successful OAuth, run inside container:
-find /root -name "*gemini*" -o -name "*google*" 2>/dev/null
-find /config -name "*" -type f 2>/dev/null
-find /root -name "*.json" -o -name ".*" -type f | head -20
-ls -la /root/.config/
-ls -la /root/
-```
-
-**Expected Locations**:
-- `/root/.config/google/` (current assumption)
-- `/root/.gemini*` files
-- Browser-based storage locations
-- Node.js application data directories
-
-#### 2. **Implement Proper Persistence Solution** (High Priority)
-**Options to Evaluate**:
-
-**Option A: Enhanced Directory Mapping**
-- Map additional directories that Gemini Code might use
-- Investigate Node.js config directories, browser cache locations
-
-**Option B: Minimal Credential Monitoring**
-- Lightweight version of old system
-- Only copy files that actually exist after OAuth
-- No complex searching, just known locations
-
-**Option C: Volume Mount Strategy**
-- Mount entire `/root` directory (security implications)
-- Mount specific subdirectories based on investigation results
-
-#### 3. **Documentation & Release** (Medium Priority)
-- Update `GEMINI.md` with new feature documentation
-- Test authentication persistence solution
-- Create proper commit for the feature
-- Prepare for merge to main branch
+#### 3. **Tool Improvements**
+- [ ] Explore deeper integration with Home Assistant's event bus.
+- [ ] Add support for local file analysis tools within the CLI.
 
 ### 🏗 **Implementation Details**
 
-#### Files Modified
-- `gemini-terminal/config.yaml` - Added configuration option
-- `gemini-terminal/run.sh` - Simplified and added session picker logic
-- `gemini-terminal/scripts/gemini-session-picker.sh` - New interactive menu
-- Removed: `credentials-manager.sh`, `credentials-service.sh`, `gemini-auth.sh`
+#### Key Files
+- `gemini-terminal/config.yaml` - Main add-on configuration and schema.
+- `gemini-terminal/run.sh` - Advanced startup and environment management.
+- `gemini-terminal/scripts/ha-context.sh` - Automated HA state awareness.
+- `gemini-terminal/scripts/setup-ha-mcp.sh` - Stable MCP server configuration.
 
-#### Architecture Decisions
-- **Simplified Credential Management**: Removed complex background monitoring
-- **Native Authentication**: Let Gemini Code handle OAuth directly
-- **Backward Compatibility**: Default auto-launch preserves existing behavior
-- **Clean Separation**: Session picker as separate script for modularity
-
-### 🧪 **Testing Strategy**
-
-#### Manual Testing Completed
-1. ✅ Auto-launch mode (backward compatibility)
-2. ✅ Session picker functionality
-3. ✅ Container build and deployment
-4. ✅ OAuth authentication flow
-
-#### Testing Needed
-1. 🔄 Authentication persistence across restarts
-2. 🔄 All session picker options with real credentials
-3. 🔄 Configuration changes in real Home Assistant environment
-
-### 🚧 **Known Issues**
-1. **Authentication Loss**: Primary blocker for release
-2. **Local Testing Limitations**: `bashio::config` doesn't work in local containers
-3. **Missing Real HA Testing**: Need to test in actual Home Assistant environment
-
-### 🎯 **Success Criteria for Release**
-- [ ] Authentication persists across container restarts
-- [ ] Both auto-launch and session picker modes work reliably
-- [ ] Documentation updated
-- [ ] Backward compatibility maintained
-- [ ] Professional-grade user experience
-
-### 🔍 **Investigation Commands for Tomorrow**
-
-```bash
-# 1. Authenticate with Gemini and immediately check storage
-podman exec -it $(podman ps -q) bash
-# (after OAuth success)
-find /root -type f -newer /etc/passwd 2>/dev/null | grep -v /proc | grep -v /sys
-ls -laR /root/.config/
-
-# 2. Test different environment variables
-GEMINI_HOME=/config/gemini-config run-addon
-
-# 3. Check Gemini Code documentation
-gemini --help | grep -i config
-gemini --help | grep -i auth
-```
-
----
-
-## Summary
-The feature is 90% complete with excellent functionality, but authentication persistence is the critical blocker. The simplified architecture is much cleaner than the original complex credential management system. Once we solve the persistence issue, this will be ready for production deployment.
+### 🔍 **Summary**
+The project has successfully transitioned from a fork of Claude Terminal to a fully functional, stable Gemini Terminal add-on. All critical blockers (shebang issues, MCP stability, and API key recognition) have been resolved in the v1.1.0 release.
