@@ -53,6 +53,13 @@
   - Improved background launch reliability.
 
 
+## 2.2.6
+- **🛡️ Hardened Configuration Override**
+  - Forcibly overwrites `settings.json` on every boot to ensure "YOLO" and "Screen Reader" modes are active.
+  - This prevents Gemini from ignoring command line flags and showing unstable interactive popups.
+  - Switched terminal renderer to `webgl` to improve copy/paste support.
+
+
 ## 2.2.5
 - **🎨 UI Restoration & High Stability**
   - Restored full colors and the dark "Terracotta" theme.
