@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.5
+- **🔍 Improved Log Visibility**
+  - Implemented real-time log streaming from Gemini internal logs to the Home Assistant "Logs" tab.
+  - Internal Gemini events will now appear with a `[Gemini-Internal]` prefix.
+
+
 ## 2.0.4
 - **🛠️ Log Mirroring & Boot Fix**
   - Reverted direct log writing to fix boot failures.

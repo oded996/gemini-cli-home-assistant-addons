@@ -77,18 +77,11 @@ addons/
 EOF
     fi
 
-    # Log system limits and state
-    {
-        echo "--- Session Start: $(date) ---"
-        echo "Node: $(node --version)"
-        [ -f /proc/sys/fs/inotify/max_user_watches ] && echo "Inotify limit: $(cat /proc/sys/fs/inotify/max_user_watches)"
-        free -m
-    } > /config/gemini_system.log
-
-    bashio::log.info "Environment initialized:"
-    bashio::log.info "  - Home: $HOME"
-    bashio::log.info "  - Config: $XDG_CONFIG_HOME"
-    bashio::log.info "  - Gemini config: $GEMINI_CONFIG_DIR"
+    # Log system limits to standard logs
+    bashio::log.info "Node version: $(node --version)"
+    if [ -f /proc/sys/fs/inotify/max_user_watches ]; then
+        bashio::log.info "Inotify limit: $(cat /proc/sys/fs/inotify/max_user_watches)"
+    fi
 }
 
 # One-time migration of existing authentication files
@@ -134,18 +127,19 @@ start_web_terminal() {
         fi
     fi
 
-    # Start a background process to mirror internal logs to /config/gemini-logs
-    # This avoids the "Access Denied" symlink issues and boot failures
+    # Background Log Streamer: Pipes Gemini's internal logs directly to Add-on Logs
     (
-        local src="/data/home/.gemini/logs"
-        local dest="/config/gemini-logs"
-        mkdir -p "$dest"
+        local log_dir="/data/home/.gemini/logs"
+        mkdir -p "$log_dir"
         while true; do
-            if [ -d "$src" ]; then
-                cp -r "$src"/* "$dest/" 2>/dev/null || true
-                chmod 666 "$dest"/* 2>/dev/null || true
+            local latest_log=$(ls -t "$log_dir"/*.log 2>/dev/null | head -n 1)
+            if [ -n "$latest_log" ]; then
+                # Stream the file and prefix it for clarity in the UI
+                tail -n 0 -F "$latest_log" | while read -r line; do
+                    echo "[Gemini-Internal] $line"
+                done
             fi
-            sleep 10
+            sleep 5
         done
     ) &
 
