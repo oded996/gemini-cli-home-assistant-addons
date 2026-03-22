@@ -39,6 +39,13 @@
   - Forced stable interactive mode to prevent V8 engine assertion failures.
 
 
+## 2.2.3
+- **🛡️ Strict Isolation Fix**
+  - Permanently removed `gemini-logs` from the config directory to break recursive crash loops.
+  - Switched terminal renderer to `canvas` to improve text selection/copy support in browser iframes.
+  - Added `GEMINI_MAX_FILE_SIZE_BYTES` limit to prevent memory exhaustion on large files.
+
+
 ## 2.2.2
 - **🛠️ Fixed Startup & Clipboard**
   - Fixed "stack-size not allowed" error by passing the flag directly to the Node binary.

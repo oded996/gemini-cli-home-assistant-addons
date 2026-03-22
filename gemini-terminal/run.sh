@@ -33,7 +33,10 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Use only universally allowed Node options here
+    # Stability: Limit file size to prevent OOM on large logs/DBs
+    export GEMINI_MAX_FILE_SIZE_BYTES=1000000 
+    
+    # Critical Node.js stability
     export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
     export NODE_NO_WARNINGS=1
     export UV_THREADPOOL_SIZE=64
@@ -50,7 +53,11 @@ init_environment() {
         fi
     fi
 
-    # Ensure .geminiignore exists
+    # CRITICAL: Remove all visible log folders from /config to break the recursive crash loop
+    # We move them to /data where Gemini won't scan them by default
+    rm -rf /config/gemini-logs /config/.gemini_logs 2>/dev/null || true
+
+    # Ensure .geminiignore is extremely restrictive
     if [ ! -f "/config/.geminiignore" ]; then
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
@@ -85,24 +92,26 @@ start_web_terminal() {
     # Determine binary paths
     local node_bin=$(which node)
     local gemini_bin=$(which gemini)
-    local debug_log="/config/.gemini_logs/last_session.log"
-    mkdir -p "/config/.gemini_logs"
+    
+    # Internal log path (not visible to Gemini scan)
+    local debug_log="/data/gemini_last_run.log"
 
     # Kill any zombie sessions
     tmux kill-session -t gemini 2>/dev/null || true
 
-    local auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
     local gemini_debug=$(bashio::config 'gemini_debug' 'false')
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
-    # Launch Gemini via explicit node command to bypass NODE_OPTIONS restrictions on stack-size
+    # Launch Gemini
     local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk ${debug_flag}"
     
     bashio::log.info "Launching Gemini background worker..."
     tmux new-session -d -s gemini "export TERM=xterm-256color; ${gemini_cmd} 2> ${debug_log}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
-    # ttyd configuration with forced clipboard support
+    # ttyd configuration:
+    # 1. canvas renderer often works better for selection in iframes
+    # 2. explicit copy command for browser compatibility
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -110,7 +119,7 @@ start_web_terminal() {
         --ping-interval 10 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
-        --client-option enableClipboard=true \
+        --client-option rendererType=canvas \
         bash -c "echo -e '\033[0;36mAttaching to Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
