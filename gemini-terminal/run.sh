@@ -33,8 +33,8 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Node.js stability
-    export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
+    # Node.js stability - increased stack size specifically for recursive directory scans
+    export NODE_OPTIONS="--max-old-space-size=8192 --stack-size=10000 --no-warnings"
     export NODE_NO_WARNINGS=1
     export UV_THREADPOOL_SIZE=64
     
@@ -84,7 +84,7 @@ install_tools() {
 # Start main web terminal with background persistence
 start_web_terminal() {
     local port=7682
-    bashio::log.info "Starting persistent Gemini session on port ${port}..."
+    bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
     # Create a hidden log directory for the user that Gemini will ignore
     mkdir -p "/config/.gemini_logs"
@@ -94,21 +94,24 @@ start_web_terminal() {
     tmux kill-session -t gemini 2>/dev/null || true
 
     # Start Gemini in a detached background session
-    # We use TERM=vt100 for maximum character compatibility
+    # --experimental-acp false: Stops the background scanning which causes crashes
+    # --raw-output: Prevents buffer corruption
     local gemini_cmd="gemini --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
     
-    bashio::log.info "Launching Gemini daemon..."
-    tmux new-session -d -s gemini "export TERM=vt100; ${gemini_cmd} 2> ${debug_log}; echo 'Gemini session ended.'; exec bash"
+    bashio::log.info "Launching Gemini background worker..."
+    # We force a specific terminal type and increase history for tmux
+    tmux new-session -d -s gemini "export TERM=xterm-256color; ${gemini_cmd} 2> ${debug_log}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
-    # ttyd now just "looks" at the existing session
-    # If the user refreshes their browser, they just re-attach
+    # ttyd now just attaches to the background session.
+    # We enabled reconnection and standard clipboard options.
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 5 \
-        --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo 'Reconnecting to active session...'; sleep 1; tmux attach-session -t gemini"
+        --ping-interval 10 \
+        --client-option "enableReconnect=true" \
+        --client-option "copyOnSelect=true" \
+        bash -c "echo -e '\033[0;36mAttaching to Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
 # Setup ha-mcp (Home Assistant MCP Server)

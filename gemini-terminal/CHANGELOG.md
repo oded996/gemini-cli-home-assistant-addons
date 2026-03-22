@@ -39,6 +39,13 @@
   - Forced stable interactive mode to prevent V8 engine assertion failures.
 
 
+## 2.2.1
+- **🛠️ UI & Core Stability**
+  - Fixed standard copy/paste support by enabling `copyOnSelect` and using a native theme.
+  - Increased Node.js stack size to 10MB to prevent recursion crashes during directory scans.
+  - Improved tmux attachment logic for better browser-to-container reliability.
+
+
 ## 2.2.0
 - **🛡️ Persistent Daemon Architecture**
   - Gemini now runs as a background service: survives browser refreshes and proxy timeouts.
