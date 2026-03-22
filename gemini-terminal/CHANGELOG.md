@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.3
+- **🛠️ Log Access & Stability Fix**
+  - Changed internal log path to a real folder (`/config/gemini-logs`) to fix "Access Denied" errors in File Editor.
+  - Explicitly disabled Gemini sandbox (`--sandbox false`) for better container compatibility.
+
+
 ## 2.0.2
 - **⚙️ Memory & Diagnostics Fix**
   - Increased RAM limit to 4GB and CPU to 4.0.

@@ -31,8 +31,16 @@ init_environment() {
     export XDG_STATE_HOME="$state_dir"
     export XDG_DATA_HOME="/data/.local/share"
     
-    # Gemini-specific environment variables
-    export GEMINI_CONFIG_DIR="$gemini_config_dir"
+    # Set Gemini internal logs to write directly to /config for easy user access
+    # We use a real directory instead of a symlink to avoid "Access Denied" in HA File Editor
+    local user_log_dir="/config/gemini-logs"
+    mkdir -p "$user_log_dir"
+    chmod 777 "$user_log_dir"
+    
+    # We set these to tell Gemini CLI exactly where to put its own files
+    # This prevents sandbox issues and makes logs visible
+    export GEMINI_LOG_DIRECTORY="$user_log_dir"
+    export GOOGLE_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     
     # Critical for Node.js stability in containers
@@ -85,10 +93,6 @@ EOF
         [ -f /proc/sys/fs/inotify/max_user_watches ] && echo "Inotify limit: $(cat /proc/sys/fs/inotify/max_user_watches)"
         free -m
     } > /config/gemini_system.log
-
-    # Create symlink to internal logs for easy access via File Editor
-    mkdir -p "$data_home/.gemini/logs"
-    ln -sf "$data_home/.gemini/logs" "/config/gemini-logs"
 
     bashio::log.info "Environment initialized:"
     bashio::log.info "  - Home: $HOME"
@@ -328,13 +332,13 @@ get_gemini_launch_command() {
 
     if [ "$auto_launch_gemini" = "true" ]; then
         # Use tmux for session persistence
-        cmd="tmux -u new-session -A -s gemini \"gemini ${debug_flag}\""
+        cmd="tmux -u new-session -A -s gemini \"gemini ${debug_flag} --sandbox false\""
     else
         if [ -f /usr/local/bin/gemini-session-picker ]; then
             cmd="/usr/local/bin/gemini-session-picker"
         else
             bashio::log.warning "Session picker not found, falling back to auto-launch"
-            cmd="tmux -u new-session -A -s gemini \"gemini ${debug_flag}\""
+            cmd="tmux -u new-session -A -s gemini \"gemini ${debug_flag} --sandbox false\""
         fi
     fi
 
