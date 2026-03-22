@@ -39,6 +39,14 @@
   - Forced stable interactive mode to prevent V8 engine assertion failures.
 
 
+## 2.2.0
+- **🛡️ Persistent Daemon Architecture**
+  - Gemini now runs as a background service: survives browser refreshes and proxy timeouts.
+  - Hidden Logs: Moved logs to `/config/.gemini_logs` so the AI doesn't scan itself and crash.
+  - Forced `TERM=vt100` for the background session to prevent UI corruption.
+  - Auto-Reconnect: Simply refresh your browser to re-attach to your active work.
+
+
 ## 2.1.0
 - **🚀 Stability Mega-Fix**
   - Re-integrated critical stability flags discovered during 1.x testing into the stable 2.x foundation.

@@ -13,66 +13,50 @@ init_environment() {
     local state_dir="/data/.local/state"
     local gemini_config_dir="/data/.config/gemini"
 
-    bashio::log.info "Initializing Gemini CLI environment in /data..."
+    bashio::log.info "Initializing Gemini CLI environment..."
 
-    # Create all required directories
-    if ! mkdir -p "$data_home" "$config_dir/gemini" "$cache_dir" "$state_dir" "/data/.local"; then
-        bashio::log.error "Failed to create directories in /data"
-        exit 1
-    fi
-
-    # Set permissions
+    # Create required directories
+    mkdir -p "$data_home" "$config_dir/gemini" "$cache_dir" "$state_dir" "/data/.local"
     chmod 755 "$data_home" "$config_dir" "$cache_dir" "$state_dir" "$gemini_config_dir"
 
-    # Set XDG and application environment variables
+    # Set environment variables
     export HOME="$data_home"
     export XDG_CONFIG_HOME="$config_dir"
     export XDG_CACHE_HOME="$cache_dir"
     export XDG_STATE_HOME="$state_dir"
     export XDG_DATA_HOME="/data/.local/share"
-    
-    # Language and encoding
     export LANG="en_US.UTF-8"
     export LC_ALL="en_US.UTF-8"
     
     # Gemini-specific environment variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
-    
-    # Force disable all background telemetry and noise
-    export GEMINI_TELEMETRY_DISABLED=true
     export GEMINI_TELEMETRY=off
-    export GOOGLE_ANALYTICS_ID_DISABLED=true
     
-    # Stability fixes for Node.js
+    # Node.js stability
     export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
+    export NODE_NO_WARNINGS=1
     export UV_THREADPOOL_SIZE=64
-    export PYTHONUNBUFFERED=1
     
-    # Prevent file watcher crashes
+    # Mandatory fix for file watcher crashes
     export FSWATCH_BACKEND="poll"
 
     # Set Gemini API key
     if bashio::config.has_value 'gemini_api_key'; then
-        local api_key
-        api_key=$(bashio::config 'gemini_api_key')
+        local api_key=$(bashio::config 'gemini_api_key')
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
             export GEMINI_API_KEY="$api_key"
-            bashio::log.info "Gemini API key configured"
         fi
     fi
 
-    # Ensure .geminiignore is highly restrictive
-    # We explicitly include our own log files to prevent recursive scanning
+    # Ensure .geminiignore exists and is very aggressive
     if [ ! -f "/config/.geminiignore" ]; then
-        bashio::log.info "Creating default /config/.geminiignore..."
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
-.gemini/
-gemini-logs/
-gemini_*.log
+.gemini*/
+.node_modules/
 backups/
 addons/
 deps/
@@ -81,65 +65,50 @@ share/
 tts/
 www/
 blueprints/
-node_modules/
 *.db
-*.db-shm
-*.db-wal
 *.log
 *.png
 *.jpg
-*.jpeg
 *.gz
 *.zip
 EOF
     fi
 }
 
-# One-time migration of existing authentication files
-migrate_legacy_auth_files() {
-    local target_dir="$1"
-    local migrated=false
-    local legacy_locations=("/root/.config/google" "/root/.google" "/config/gemini-config" "/tmp/gemini-config")
-    for legacy_path in "${legacy_locations[@]}"; do
-        if [ -d "$legacy_path" ] && [ "$(ls -A "$legacy_path" 2>/dev/null)" ]; then
-            cp -r "$legacy_path"/* "$target_dir/" 2>/dev/null || true
-        fi
-    done
-}
-
 # Install required tools
 install_tools() {
-    bashio::log.info "Installing additional tools..."
+    bashio::log.info "Installing terminal tools..."
     apk add --no-cache ttyd jq curl tmux coreutils util-linux
 }
 
-# Start main web terminal
+# Start main web terminal with background persistence
 start_web_terminal() {
     local port=7682
-    bashio::log.info "Starting web terminal on port ${port}..."
+    bashio::log.info "Starting persistent Gemini session on port ${port}..."
 
-    local auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
-    local gemini_debug=$(bashio::config 'gemini_debug' 'false')
-    local gemini_yolo=$(bashio::config 'gemini_yolo' 'true')
+    # Create a hidden log directory for the user that Gemini will ignore
+    mkdir -p "/config/.gemini_logs"
+    local debug_log="/config/.gemini_logs/last_session.log"
+
+    # Kill any zombie sessions
+    tmux kill-session -t gemini 2>/dev/null || true
+
+    # Start Gemini in a detached background session
+    # We use TERM=vt100 for maximum character compatibility
+    local gemini_cmd="gemini --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
     
-    local debug_flag=""
-    [ "$gemini_debug" = "true" ] && debug_flag="--debug"
-    
-    local yolo_flag=""
-    [ "$gemini_yolo" = "true" ] && yolo_flag="--approval-mode yolo"
+    bashio::log.info "Launching Gemini daemon..."
+    tmux new-session -d -s gemini "export TERM=vt100; ${gemini_cmd} 2> ${debug_log}; echo 'Gemini session ended.'; exec bash"
 
-    # Stable Gemini command flags
-    # We add --experimental-acp false to stop background flickering
-    local gemini_cmd="gemini ${debug_flag} ${yolo_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
-    local launch_command="tmux -u new-session -s gemini \"${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
-
+    # ttyd now just "looks" at the existing session
+    # If the user refreshes their browser, they just re-attach
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
         --ping-interval 5 \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mConnecting to Gemini...\033[0m'; ${launch_command}"
+        bash -c "echo 'Reconnecting to active session...'; sleep 1; tmux attach-session -t gemini"
 }
 
 # Setup ha-mcp (Home Assistant MCP Server)
@@ -152,7 +121,6 @@ setup_ha_mcp() {
 
 # Main execution
 main() {
-    bashio::log.info "Initializing Gemini Terminal..."
     init_environment
     install_tools
     setup_ha_mcp
