@@ -30,6 +30,9 @@ RUN npm install -g @google/gemini-cli@latest \
 # Install uv for running ha-mcp (Python package manager/runner)
 RUN apk add --no-cache uv
 
+# Pre-install ha-mcp to ensure it's ready to use
+RUN pip3 install --break-system-packages --no-cache-dir ha-mcp==3.5.1
+
 # Create directory for Gemini configuration and set working directory
 RUN mkdir -p /config/gemini-config
 WORKDIR /config
