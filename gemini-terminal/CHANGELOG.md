@@ -110,6 +110,13 @@
   - Improved tmux attachment logic for better browser-to-container reliability.
 
 
+## 2.3.4
+- **🛠️ Boot & Auth Fix**
+  - Fixed "unrecognized option: ping-timeout" which caused terminal boot failure.
+  - Fixed MCP authentication by ensuring `GEMINI_API_KEY` is exported during setup.
+  - Maintains internal trace extraction for better debugging.
+
+
 ## 2.3.3
 - **🔍 Post-Mortem Exit Diagnostics**
   - Implemented automatic extraction of Gemini's internal hidden logs upon exit.

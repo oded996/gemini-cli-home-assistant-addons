@@ -46,6 +46,7 @@ EOF
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
             export GEMINI_API_KEY="$api_key"
+            bashio::log.info "Gemini API key configured"
         fi
     fi
 
@@ -92,8 +93,6 @@ LATEST_LOG=$(ls -t /data/home/.gemini/logs/*.log 2>/dev/null | head -n 1)
 if [ -n "$LATEST_LOG" ]; then
     cp "$LATEST_LOG" /config/gemini_internal_trace.log
     echo "Internal trace saved to: /config/gemini_internal_trace.log"
-    echo "Last 10 lines of trace:"
-    tail -n 10 /config/gemini_internal_trace.log
 else
     echo "No internal Gemini logs were found."
 fi
@@ -101,23 +100,31 @@ echo "------------------------------------------------"
 EOF
     chmod +x /usr/local/bin/gemini-wrapper
 
-    # Run ttyd with an extremely fast heartbeat and fixed terminal size
+    # Get user configuration
+    local gemini_debug=$(bashio::config 'gemini_debug' 'false')
+    local debug_flag=""
+    [ "$gemini_debug" = "true" ] && debug_flag="--debug"
+
+    # Run ttyd without ping-timeout (not supported in this version)
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 2 \
-        --ping-timeout 60 \
+        --ping-interval 5 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; gemini-wrapper; echo ''; echo 'Gemini session ended.'; exec bash"
+        bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; gemini-wrapper ${debug_flag}; echo ''; echo 'Gemini session ended.'; exec bash"
 }
 
-# Setup ha-mcp
+# Setup ha-mcp (Home Assistant MCP Server)
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
+        # Force API key export for MCP setup
+        if [ -n "$GEMINI_API_KEY" ]; then
+            export GEMINI_API_KEY="$GEMINI_API_KEY"
+        fi
         /opt/scripts/setup-ha-mcp.sh || true
     fi
 }
