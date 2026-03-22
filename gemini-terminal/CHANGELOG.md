@@ -110,6 +110,14 @@
   - Improved tmux attachment logic for better browser-to-container reliability.
 
 
+## 2.3.3
+- **🔍 Post-Mortem Exit Diagnostics**
+  - Implemented automatic extraction of Gemini's internal hidden logs upon exit.
+  - Internal trace is now saved to `/config/gemini_internal_trace.log` for easy reading.
+  - Added exit code reporting directly to the terminal screen.
+  - Stabilized terminal input to prevent premature exit signals.
+
+
 ## 2.3.2
 - **✨ Full Interactivity Restored**
   - Removed forced YOLO mode: Gemini will now correctly ask for approvals again.

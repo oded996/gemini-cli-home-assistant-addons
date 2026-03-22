@@ -20,7 +20,6 @@ init_environment() {
     export XDG_CONFIG_HOME="$config_dir"
     export LANG="en_US.UTF-8"
     export LC_ALL="en_US.UTF-8"
-    export TERM="xterm-256color"
     
     # Gemini Variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
@@ -50,7 +49,7 @@ EOF
         fi
     fi
 
-    # Ensure .geminiignore is aggressive to help performance
+    # Ensure .geminiignore is aggressive
     if [ ! -f "/config/.geminiignore" ]; then
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
@@ -79,18 +78,30 @@ start_web_terminal() {
     local node_bin=$(which node)
     local gemini_bin=$(which gemini)
     
-    # Get user configuration
-    local gemini_debug=$(bashio::config 'gemini_debug' 'false')
-    local debug_flag=""
-    [ "$gemini_debug" = "true" ] && debug_flag="--debug"
+    # Internal trace capture script
+    cat > /usr/local/bin/gemini-wrapper << 'EOF'
+#!/bin/bash
+# Run Gemini and capture the internal trace on exit
+/usr/bin/node /usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk "$@"
+EXIT_CODE=$?
+echo ""
+echo "------------------------------------------------"
+echo "Gemini session finished with Exit Code: $EXIT_CODE"
+echo "Attempting to extract internal diagnostic trace..."
+LATEST_LOG=$(ls -t /data/home/.gemini/logs/*.log 2>/dev/null | head -n 1)
+if [ -n "$LATEST_LOG" ]; then
+    cp "$LATEST_LOG" /config/gemini_internal_trace.log
+    echo "Internal trace saved to: /config/gemini_internal_trace.log"
+    echo "Last 10 lines of trace:"
+    tail -n 10 /config/gemini_internal_trace.log
+else
+    echo "No internal Gemini logs were found."
+fi
+echo "------------------------------------------------"
+EOF
+    chmod +x /usr/local/bin/gemini-wrapper
 
-    # Stability Flags:
-    # Removed forced YOLO - restoring interactive mode
-    # Run in foreground for best TTY detection
-    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --raw-output --accept-raw-output-risk ${debug_flag}"
-    
-    # Run ttyd with an extremely fast heartbeat (2s)
-    # This prevents Home Assistant's proxy from timing out while you are reading a prompt
+    # Run ttyd with an extremely fast heartbeat and fixed terminal size
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -100,7 +111,7 @@ start_web_terminal() {
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; ${gemini_cmd}; echo ''; echo 'Gemini session ended.'; exec bash"
+        bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; gemini-wrapper; echo ''; echo 'Gemini session ended.'; exec bash"
 }
 
 # Setup ha-mcp
