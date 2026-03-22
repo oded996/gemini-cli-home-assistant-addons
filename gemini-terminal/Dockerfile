@@ -20,7 +20,8 @@ RUN apk add --no-cache \
     jq \
     tree \
     tmux \
-    yq
+    yq \
+    coreutils
 
 # Install Gemini CLI via npm
 RUN npm install -g @google/gemini-cli@latest \
