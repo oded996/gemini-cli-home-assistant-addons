@@ -61,7 +61,7 @@ init_environment() {
     # Migrate any existing authentication files from legacy locations
     migrate_legacy_auth_files "$gemini_config_dir"
 
-    # Install tmux configuration
+    # Install tmux configuration to user home directory
     if [ -f "/opt/scripts/tmux.conf" ]; then
         cp /opt/scripts/tmux.conf "$data_home/.tmux.conf"
         chmod 644 "$data_home/.tmux.conf"
@@ -119,17 +119,22 @@ start_web_terminal() {
 
     local auto_launch_gemini=$(bashio::config 'auto_launch_gemini' 'true')
     local gemini_debug=$(bashio::config 'gemini_debug' 'false')
+    local gemini_yolo=$(bashio::config 'gemini_yolo' 'true')
+    
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
+    
+    local yolo_flag=""
+    [ "$gemini_yolo" = "true" ] && yolo_flag="--approval-mode yolo"
 
     # Create a fresh screen log
     local screen_log="/config/gemini_screen.log"
     echo "--- Terminal Start: $(date) ---" > "$screen_log"
     chmod 666 "$screen_log"
 
-    # Background Screen Streamer: Pipes everything seen in tmux to Add-on Logs
+    # Background Screen Streamer
     (
-        sleep 5 # Wait for tmux to initialize
+        sleep 5 
         while true; do
             if [ -f "$screen_log" ]; then
                 tail -n 0 -F "$screen_log" | while read -r line; do
@@ -140,11 +145,8 @@ start_web_terminal() {
         done
     ) &
 
-    # Launch Gemini with all stability flags re-integrated
-    # --experimental-acp false: Stop background flickering
-    # --raw-output: Prevent sanitization crashes
-    # --sandbox false: Standard for containers
-    local gemini_cmd="gemini ${debug_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
+    # Stable Gemini command flags
+    local gemini_cmd="gemini ${debug_flag} ${yolo_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
     local launch_command="tmux -u new-session -s gemini \"tmux pipe-pane -o 'cat >> ${screen_log}'; ${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
 
     exec ttyd \
