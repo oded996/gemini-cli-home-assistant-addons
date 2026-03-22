@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.4
+- **🛠️ Log Mirroring & Boot Fix**
+  - Reverted direct log writing to fix boot failures.
+  - Implemented background log mirroring to `/config/gemini-logs` for safe, read-only access.
+  - Kept 4GB RAM unlock and disabled sandbox for maximum stability.
+
+
 ## 2.0.3
 - **🛠️ Log Access & Stability Fix**
   - Changed internal log path to a real folder (`/config/gemini-logs`) to fix "Access Denied" errors in File Editor.
