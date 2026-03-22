@@ -16,16 +16,16 @@ url: "https://github.com/oded996/gemini-cli-home-assistant-addons"
 
 # Web interface configuration
 ingress: true
-ingress_port: 7681
+ingress_port: 7682
 panel_icon: mdi:account-circle-outline
 panel_title: "Gemini Terminal"
 panel_admin: true
 
 # Port configuration
 ports:
-  7681/tcp: 7681
+  7682/tcp: 7682
 ports_description:
-  7681/tcp: "Web terminal (not required for ingress)"
+  7682/tcp: "Web terminal (not required for ingress)"
 
 # Add-on configuration options
 options:
@@ -59,4 +59,4 @@ auth_api: true
 startup: services
 
 # Web UI access URL
-webui: http://[HOST]:[PORT:7681]/
+webui: http://[HOST]:[PORT:7682]/

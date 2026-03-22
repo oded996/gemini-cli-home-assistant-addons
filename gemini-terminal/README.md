@@ -89,7 +89,7 @@ persistent_pip_packages:
 ```
 
 ### Default Settings
-- **Port**: Web interface runs on port 7681
+- **Port**: Web interface runs on port 7682
 - **Authentication**: OAuth with Google (credentials stored securely in `/data/.config/gemini/`)
 - **Terminal**: Full bash environment with Gemini Code CLI pre-installed
 - **Volumes**: Access to `/config` (Home Assistant configuration)
@@ -146,7 +146,7 @@ This add-on includes a comprehensive development setup using Nix:
 ```bash
 # Available development commands
 build-addon      # Build the add-on container with Podman
-run-addon        # Run add-on locally on port 7681
+run-addon        # Run add-on locally on port 7682
 lint-dockerfile  # Lint Dockerfile with hadolint
 test-endpoint    # Test web endpoint availability
 ```

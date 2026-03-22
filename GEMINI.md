@@ -19,9 +19,9 @@ direnv allow
 
 ### Core Development Commands
 - `build-addon` - Build the Gemini Terminal add-on with Podman
-- `run-addon` - Run add-on locally on port 7681 with volume mapping
+- `run-addon` - Run add-on locally on port 7682 with volume mapping
 - `lint-dockerfile` - Lint Dockerfile using hadolint
-- `test-endpoint` - Test web endpoint availability (curl localhost:7681)
+- `test-endpoint` - Test web endpoint availability (curl localhost:7682)
 
 ### Manual Commands (without aliases)
 ```bash
@@ -29,13 +29,13 @@ direnv allow
 podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 -t local/gemini-terminal ./gemini-terminal
 
 # Run locally
-podman run -p 7681:7681 -v $(pwd)/config:/config local/gemini-terminal
+podman run -p 7682:7682 -v $(pwd)/config:/config local/gemini-terminal
 
 # Lint
 hadolint ./gemini-terminal/Dockerfile
 
 # Test endpoint
-curl -X GET http://localhost:7681/
+curl -X GET http://localhost:7682/
 ```
 
 ## Architecture
@@ -84,12 +84,12 @@ mkdir -p /tmp/test-config/gemini-config
 echo '{"auto_launch_gemini": false}' > /tmp/test-config/options.json
 
 # Run test container
-podman run -d --name test-gemini-dev -p 7681:7681 -v /tmp/test-config:/config local/gemini-terminal:test
+podman run -d --name test-gemini-dev -p 7682:7682 -v /tmp/test-config:/config local/gemini-terminal:test
 
 # Check logs
 podman logs test-gemini-dev
 
-# Test web interface at http://localhost:7681
+# Test web interface at http://localhost:7682
 
 # Stop and cleanup
 podman stop test-gemini-dev && podman rm test-gemini-dev
@@ -113,7 +113,7 @@ podman exec test-gemini-dev chmod +x /opt/scripts/gemini-session-picker.sh
 2. **Rebuild** with `podman build -t local/gemini-terminal:test ./gemini-terminal`
 3. **Stop/remove** old container: `podman stop test-gemini-dev && podman rm test-gemini-dev`
 4. **Start new** container with updated image
-5. **Test** changes at http://localhost:7681
+5. **Test** changes at http://localhost:7682
 6. **Repeat** until satisfied, then commit and push
 
 #### Debugging Tips
@@ -123,7 +123,7 @@ podman exec test-gemini-dev chmod +x /opt/scripts/gemini-session-picker.sh
 - **Volume contents**: `ls -la /tmp/test-config/` to verify persistence
 
 ### Production Testing
-- **Local Testing**: Use `run-addon` to test on localhost:7681
+- **Local Testing**: Use `run-addon` to test on localhost:7682
 - **Container Health**: Check logs with `podman logs <container-id>`
 - **Authentication**: Use `gemini-auth debug` within terminal for credential troubleshooting
 

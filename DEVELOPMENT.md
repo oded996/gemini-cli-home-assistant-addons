@@ -25,14 +25,14 @@ echo '{"auto_launch_gemini": false}' > /tmp/test-config/options.json
 
 # 3. Run test container
 podman run -d --name test-gemini-dev \
-  -p 7681:7681 \
+  -p 7682:7682 \
   -v /tmp/test-config:/config \
   local/gemini-terminal:test
 
 # 4. Check startup logs
 podman logs test-gemini-dev
 
-# 5. Test in browser: http://localhost:7681
+# 5. Test in browser: http://localhost:7682
 
 # 6. Clean up when done
 podman stop test-gemini-dev && podman rm test-gemini-dev
@@ -54,11 +54,11 @@ podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 \
 podman stop test-gemini-dev && podman rm test-gemini-dev
 
 # Start new container with changes
-podman run -d --name test-gemini-dev -p 7681:7681 \
+podman run -d --name test-gemini-dev -p 7682:7682 \
   -v /tmp/test-config:/config local/gemini-terminal:test
 
 # Test changes
-open http://localhost:7681
+open http://localhost:7682
 ```
 
 #### 2. Hot-reload Script Testing
@@ -105,8 +105,8 @@ cp ~/.config/google/* /tmp/test-config/gemini-config/
 
 ```bash
 # Run multiple containers on different ports
-podman run -d --name test-gemini-dev-8681 -p 8681:7681 -v /tmp/test-config-2:/config local/gemini-terminal:test
-podman run -d --name test-gemini-dev-9681 -p 9681:7681 -v /tmp/test-config-3:/config local/gemini-terminal:test
+podman run -d --name test-gemini-dev-8681 -p 8681:7682 -v /tmp/test-config-2:/config local/gemini-terminal:test
+podman run -d --name test-gemini-dev-9681 -p 9681:7682 -v /tmp/test-config-3:/config local/gemini-terminal:test
 ```
 
 ### Debugging Techniques
@@ -145,7 +145,7 @@ podman exec test-gemini-dev ls -la /config/gemini-config/
 
 ```bash
 # Test web endpoint
-curl -I http://localhost:7681
+curl -I http://localhost:7682
 
 # Test WebSocket connection
 curl --include --no-buffer \
@@ -153,7 +153,7 @@ curl --include --no-buffer \
   --header "Upgrade: websocket" \
   --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
   --header "Sec-WebSocket-Version: 13" \
-  http://localhost:7681/ws
+  http://localhost:7682/ws
 ```
 
 ### Performance Testing
@@ -176,7 +176,7 @@ podman history local/gemini-terminal:test
 ```bash
 # Multiple concurrent connections
 for i in {1..5}; do
-  curl http://localhost:7681 &
+  curl http://localhost:7682 &
 done
 wait
 ```
@@ -185,11 +185,11 @@ wait
 
 #### Port Already In Use
 ```bash
-# Find and kill process using port 7681
-sudo lsof -ti:7681 | xargs kill -9
+# Find and kill process using port 7682
+sudo lsof -ti:7682 | xargs kill -9
 
 # Or use different port
-podman run -d --name test-gemini-dev -p 7682:7681 -v /tmp/test-config:/config local/gemini-terminal:test
+podman run -d --name test-gemini-dev -p 7682:7682 -v /tmp/test-config:/config local/gemini-terminal:test
 ```
 
 #### Volume Mount Issues
@@ -265,7 +265,7 @@ The changes will automatically be built and distributed to Home Assistant users.
 mkdir -p /tmp/ha-config/{.storage,gemini-config}
 echo '{"auto_launch_gemini": false}' > /tmp/ha-config/options.json
 
-podman run -d --name test-ha-gemini -p 7681:7681 \
+podman run -d --name test-ha-gemini -p 7682:7682 \
   -v /tmp/ha-config:/config local/gemini-terminal:test
 ```
 

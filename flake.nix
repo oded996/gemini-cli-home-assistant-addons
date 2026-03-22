@@ -44,10 +44,10 @@
             
             # Create convenience aliases
             alias build-addon='podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 -t local/gemini_terminal ./gemini-terminal'
-            alias run-addon='podman run -p 7681:7681 -v $(pwd)/config:/config local/gemini_terminal'
+            alias run-addon='podman run -p 7682:7682 -v $(pwd)/config:/config local/gemini_terminal'
             alias validate-addon='echo "Note: Home Assistant builder validation requires HA OS environment"'
             alias lint-dockerfile='hadolint ./gemini-terminal/Dockerfile'
-            alias test-endpoint='curl -X GET http://localhost:7681/ || echo "Add-on not running. Use: run-addon"'
+            alias test-endpoint='curl -X GET http://localhost:7682/ || echo "Add-on not running. Use: run-addon"'
           '';
         };
       });
