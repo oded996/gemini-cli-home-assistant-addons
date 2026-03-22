@@ -110,6 +110,13 @@
   - Improved tmux attachment logic for better browser-to-container reliability.
 
 
+## 2.3.1
+- **🛠️ Ultra-Stable Mode**
+  - Switched to `-y` flag for absolute YOLO mode to bypass all approval prompts.
+  - Forced `TERM=linux` to disable unstable terminal UI features.
+  - Added detection of existing crash reports in startup logs.
+
+
 ## 2.2.0
 - **🛡️ Persistent Daemon Architecture**
   - Gemini now runs as a background service: survives browser refreshes and proxy timeouts.

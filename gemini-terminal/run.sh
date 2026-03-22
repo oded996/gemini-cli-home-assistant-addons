@@ -26,11 +26,12 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Clean settings.json - removed problematic telemetry key
+    # Force stable settings - absolute minimal
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "yolo",
-  "screenReader": false
+  "screenReader": false,
+  "telemetry": "off"
 }
 EOF
 
@@ -48,12 +49,7 @@ EOF
         fi
     fi
 
-    # CRITICAL: Prepare the Crash Witness log and ensure it is IGNORED by Gemini
-    local crash_log="/config/gemini_crash.log"
-    touch "$crash_log"
-    chmod 666 "$crash_log"
-
-    # Force strict ignore rules
+    # Ensure .geminiignore is very aggressive
     cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
@@ -72,6 +68,12 @@ node_modules/
 *.db
 *.log
 EOF
+
+    # Log any existing crash reports
+    local reports=$(ls /config/report.*.json 2>/dev/null || true)
+    if [ -n "$reports" ]; then
+        bashio::log.warning "Found existing crash reports in /config: $reports"
+    fi
 }
 
 # Start web terminal
@@ -86,13 +88,13 @@ start_web_terminal() {
     tmux kill-session -t gemini 2>/dev/null || true
 
     # Stability Flags:
-    # --acp false: Stop background scanning
-    # --raw-output: Prevent buffer corruption
-    local gemini_cmd="${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} --sandbox false --acp false --approval-mode yolo --raw-output --accept-raw-output-risk"
+    # Use -y for YOLO mode instead of --approval-mode
+    # Omit --acp to keep it simple
+    # Set TERM to linux for maximum compatibility
+    local gemini_cmd="${node_bin} --stack-size=10000 --report-on-fatalerror --report-directory=/config ${gemini_bin} -y --sandbox false --raw-output --accept-raw-output-risk"
     
-    bashio::log.info "Launching Gemini in Passive Logging mode..."
-    # We use 'pipe-pane' inside tmux to capture output without breaking interactivity
-    tmux new-session -d -s gemini "export TERM=xterm-256color; tmux pipe-pane -o 'cat >> ${crash_log}'; ${gemini_cmd}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
+    bashio::log.info "Launching Gemini in Ultra-Stable mode..."
+    tmux new-session -d -s gemini "export TERM=linux; tmux pipe-pane -o 'cat >> ${crash_log}'; ${gemini_cmd}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
     exec ttyd \
         --port "${port}" \
@@ -103,10 +105,10 @@ start_web_terminal() {
         --client-option copyOnSelect=true \
         --client-option allowContextMenu=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mAttaching to stable Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
+        bash -c "echo -e '\033[0;36mAttaching to session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
-# Setup ha-mcp (Home Assistant MCP Server)
+# Setup ha-mcp
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
