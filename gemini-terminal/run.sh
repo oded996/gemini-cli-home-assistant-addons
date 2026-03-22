@@ -39,37 +39,32 @@ init_environment() {
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     
-    # Critical stability fixes for Node.js in containers
-    export NODE_OPTIONS="--max-old-space-size=16384 --no-warnings"
+    # Force disable telemetry and background checks
+    export GEMINI_TELEMETRY_DISABLED=true
+    export GOOGLE_ANALYTICS_ID_DISABLED=true
+    
+    # Stability fixes for Node.js
+    export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
     export UV_THREADPOOL_SIZE=64
     export PYTHONUNBUFFERED=1
     
-    # Mandatory fix for file watcher crashes in HA /config directory
+    # Prevent file watcher crashes
     export FSWATCH_BACKEND="poll"
 
-    # Set Gemini API key if provided in configuration
+    # Set Gemini API key
     if bashio::config.has_value 'gemini_api_key'; then
         local api_key
         api_key=$(bashio::config 'gemini_api_key')
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
             export GEMINI_API_KEY="$api_key"
-            bashio::log.info "Gemini API key configured from add-on options"
+            bashio::log.info "Gemini API key configured"
         fi
     fi
 
-    # Migrate any existing authentication files from legacy locations
-    migrate_legacy_auth_files "$gemini_config_dir"
-
-    # Install tmux configuration to user home directory
-    if [ -f "/opt/scripts/tmux.conf" ]; then
-        cp /opt/scripts/tmux.conf "$data_home/.tmux.conf"
-        chmod 644 "$data_home/.tmux.conf"
-    fi
-
-    # Ensure .geminiignore exists to prevent massive scans
+    # Ensure .geminiignore is highly restrictive to prevent hangs
+    # User can edit this later if they need to see more
     if [ ! -f "/config/.geminiignore" ]; then
-        bashio::log.info "Creating default /config/.geminiignore..."
         cat > "/config/.geminiignore" << 'EOF'
 .storage/
 .git/
@@ -83,7 +78,6 @@ tts/
 www/
 blueprints/
 node_modules/
-gemini_*.log
 *.db
 *.db-shm
 *.db-wal
@@ -93,9 +87,6 @@ gemini_*.log
 *.jpeg
 *.gz
 *.zip
-*.bin
-*.so
-*.exe
 EOF
     fi
 }
@@ -103,12 +94,10 @@ EOF
 # One-time migration of existing authentication files
 migrate_legacy_auth_files() {
     local target_dir="$1"
-    local migrated=false
     local legacy_locations=("/root/.config/google" "/root/.google" "/config/gemini-config" "/tmp/gemini-config")
     for legacy_path in "${legacy_locations[@]}"; do
         if [ -d "$legacy_path" ] && [ "$(ls -A "$legacy_path" 2>/dev/null)" ]; then
             cp -r "$legacy_path"/* "$target_dir/" 2>/dev/null || true
-            migrated=true
         fi
     done
 }
@@ -134,27 +123,9 @@ start_web_terminal() {
     local yolo_flag=""
     [ "$gemini_yolo" = "true" ] && yolo_flag="--approval-mode yolo"
 
-    # Create a fresh screen log
-    local screen_log="/config/gemini_screen.log"
-    echo "--- Terminal Start: $(date) ---" > "$screen_log"
-    chmod 666 "$screen_log"
-
-    # Background Screen Streamer
-    (
-        sleep 5 
-        while true; do
-            if [ -f "$screen_log" ]; then
-                tail -n 0 -F "$screen_log" | while read -r line; do
-                    if [ -n "$line" ]; then echo "[Gemini-Screen] $line"; fi
-                done
-            fi
-            sleep 5
-        done
-    ) &
-
-    # Launch Gemini with even more aggressive stability flags
+    # Stable Gemini command flags
     local gemini_cmd="gemini ${debug_flag} ${yolo_flag} --sandbox false --experimental-acp false --raw-output --accept-raw-output-risk"
-    local launch_command="tmux -u new-session -s gemini \"tmux pipe-pane -o 'cat >> ${screen_log}'; ${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
+    local launch_command="tmux -u new-session -s gemini \"${gemini_cmd}; echo 'Gemini session ended.'; exec bash\""
 
     exec ttyd \
         --port "${port}" \
