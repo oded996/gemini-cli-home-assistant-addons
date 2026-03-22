@@ -43,9 +43,10 @@ configure_ha_mcp_server() {
     #   HOMEASSISTANT_URL: Internal Supervisor API endpoint
     #   HOMEASSISTANT_TOKEN: Supervisor token for authentication
     if gemini mcp add home-assistant \
+        --scope project \
         --env "HOMEASSISTANT_URL=http://supervisor/core" \
         --env "HOMEASSISTANT_TOKEN=${SUPERVISOR_TOKEN}" \
-        -- uvx ha-mcp@3.5.1; then
+        uvx ha-mcp@3.5.1; then
         bashio::log.info "ha-mcp configured successfully!"
         bashio::log.info "Gemini Code now has access to Home Assistant via MCP"
         bashio::log.info "Available tools: entity control, automations, scripts, history, and more"
