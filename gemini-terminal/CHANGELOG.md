@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.4
+- **🚀 Pure TTY Stability Fix**
+  - Removed `tmux` and `script` layers: Gemini now runs as the direct terminal process.
+  - Fixed Copy/Paste: Browser text selection is now native and unobstructed.
+  - Properly disabled background tasks using the `--no-acp` flag.
+  - Aggressive 1-second heartbeat to prevent Home Assistant proxy timeouts.
+
+
 ## 2.4.1
 - **🛡️ Persistent Terminal Shield**
   - Wrapped Gemini in an infinite loop: the terminal window will now **never** close on crash.

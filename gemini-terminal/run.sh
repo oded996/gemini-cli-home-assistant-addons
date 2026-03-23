@@ -13,27 +13,27 @@ init_environment() {
 
     bashio::log.info "Initializing Gemini CLI environment..."
 
-    mkdir -p "$data_home" "$config_dir/gemini" "$gemini_user_dir" "/data/.cache" "/data/.local"
+    mkdir -p "$data_home" "$config_dir/gemini" "$gemini_user_dir/logs" "/data/.cache" "/data/.local"
     chmod 755 "$data_home" "$config_dir" "$gemini_user_dir"
 
     export HOME="$data_home"
     export XDG_CONFIG_HOME="$config_dir"
     export LANG="en_US.UTF-8"
     export LC_ALL="en_US.UTF-8"
-    export TERM="xterm-256color"
+    export TERM="xterm"
     
     # Gemini Variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
-    
-    # Force disable telemetry via environment variable (safer than settings.json)
     export GEMINI_TELEMETRY=off
     
-    # Valid settings.json
+    # Restore standard interactive settings
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "default",
-  "screenReader": false
+  "screenReader": false,
+  "telemetry": "off",
+  "acp": false
 }
 EOF
 
@@ -48,6 +48,7 @@ EOF
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
             export GEMINI_API_KEY="$api_key"
+            bashio::log.info "Gemini API key configured"
         fi
     fi
 
@@ -77,30 +78,38 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    local node_bin=$(which node)
-    local gemini_bin=$(which gemini)
-    
-    # We use tmux to provide the persistent TTY
-    tmux kill-session -t gemini 2>/dev/null || true
-    
-    # CRITICAL: We pass the memory limit DIRECTLY to the node command here
-    # This ensures that even large tasks have enough RAM to complete
-    local gemini_cmd="${node_bin} --max-old-space-size=8192 --stack-size=10000 ${gemini_bin} --sandbox false --acp false --raw-output --accept-raw-output-risk"
-    
-    bashio::log.info "Launching Gemini in tmux (Memory Unlocked)..."
-    # Disable mouse tracking for copy/paste support
-    tmux new-session -d -s gemini "tmux set-option -g mouse off; ${gemini_cmd}; echo ''; echo 'Gemini session ended.'; exec bash"
+    # Create a direct-execution wrapper (no tmux, no script)
+    cat > /usr/local/bin/gemini-direct << 'EOF'
+#!/bin/bash
+echo -e "\033[0;36mInitializing Gemini CLI (Direct TTY Mode)...\033[0m"
+# We use --no-acp to properly disable background indexing
+# We pass the memory flags directly to node for maximum stability
+/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp --raw-output --accept-raw-output-risk "$@"
+EXIT_CODE=$?
+echo ""
+echo "------------------------------------------------"
+echo "Gemini process ended with Exit Code: $EXIT_CODE"
+echo "Check /config/gemini_internal_trace.log for details."
+# Copy trace if available
+LATEST_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -2 | head -n 1)
+[ -n "$LATEST_LOG" ] && cp "$LATEST_LOG" /config/gemini_internal_trace.log
+echo "------------------------------------------------"
+exec bash
+EOF
+    chmod +x /usr/local/bin/gemini-direct
 
-    # Run ttyd: we attach to the tmux session
+    # Run ttyd: 
+    # 1. ping-interval=1 keeps the proxy alive during long tasks
+    # 2. No tmux means native browser selection (COPY/PASTE) works
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 2 \
+        --ping-interval 1 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mAttaching to Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
+        /usr/local/bin/gemini-direct
 }
 
 # Setup ha-mcp
