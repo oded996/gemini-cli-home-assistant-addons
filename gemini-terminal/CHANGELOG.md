@@ -132,6 +132,14 @@
   - Stabilized terminal input to prevent premature exit signals.
 
 
+## 2.4.0
+- **🛡️ Mandatory TTY & PTY Fix**
+  - Implemented the "Pseudo-Terminal (PTY) Hack" using the `script` command to ensure Gemini correctly detects an interactive session.
+  - Enabled `tty: true` in the Home Assistant configuration for a real hardware terminal allocation.
+  - Removed all background layers: Gemini now runs directly in the TTY for perfect keyboard/diff interaction.
+  - Maintains stable memory heap and aggressive heartbeat.
+
+
 ## 2.3.2
 - **✨ Full Interactivity Restored**
   - Removed forced YOLO mode: Gemini will now correctly ask for approvals again.

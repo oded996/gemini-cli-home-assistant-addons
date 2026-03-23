@@ -26,10 +26,11 @@ init_environment() {
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Fix settings.json - removed all invalid keys
+    # Stable settings
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
-  "approvalMode": "default"
+  "approvalMode": "default",
+  "screenReader": false
 }
 EOF
 
@@ -74,48 +75,33 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    local node_bin=$(which node)
-    local gemini_bin=$(which gemini)
-    
-    # Improved trace capture script
-    cat > /usr/local/bin/gemini-wrapper << 'EOF'
+    # Create the TTY-forcing launcher
+    # We use 'script' to force a PTY (Pseudo-Terminal)
+    # This is the industry-standard "PTY Hack"
+    cat > /usr/local/bin/gemini-pty << 'EOF'
 #!/bin/bash
-# Run Gemini with fixed memory stack and capture trace
-/usr/bin/node --stack-size=10000 --report-on-fatalerror --report-directory=/config /usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk "$@"
-EXIT_CODE=$?
-echo ""
-echo "------------------------------------------------"
-echo "Gemini session finished with Exit Code: $EXIT_CODE"
-echo "Searching for internal diagnostic logs..."
-# Search globally within the data directory for any .log files created by gemini
-INTERNAL_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -5 | head -n 1)
-if [ -n "$INTERNAL_LOG" ]; then
-    cp "$INTERNAL_LOG" /config/gemini_internal_trace.log
-    echo "Internal trace extracted to: /config/gemini_internal_trace.log"
-    echo "--- TRACE END ---"
-    tail -n 20 /config/gemini_internal_trace.log
-else
-    echo "No internal logs were found in the last 5 minutes."
-fi
-echo "------------------------------------------------"
+export TERM=xterm-256color
+# Force a pseudo-terminal for Node.js
+# -q: quiet, -c: command, -e: return exit code, /dev/null: no typescript file
+script -q -e -c "/usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk $@" /dev/null
 EOF
-    chmod +x /usr/local/bin/gemini-wrapper
+    chmod +x /usr/local/bin/gemini-pty
 
     # Get user configuration
     local gemini_debug=$(bashio::config 'gemini_debug' 'false')
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
-    # Run ttyd
+    # Run ttyd: we run gemini-pty DIRECTLY to preserve the TTY link
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
-        --ping-interval 5 \
+        --ping-interval 2 \
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;36mInitializing Gemini CLI...\033[0m'; gemini-wrapper ${debug_flag}; echo ''; echo 'Gemini session ended.'; exec bash"
+        /usr/local/bin/gemini-pty ${debug_flag}
 }
 
 # Setup ha-mcp
