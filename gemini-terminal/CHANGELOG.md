@@ -147,6 +147,12 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.5
+- **🛠️ Fix: Approval Causes Exit**
+  - Removed `--raw-output` and `--accept-raw-output-risk` flags that put Gemini in non-interactive pipe mode.
+  - In pipe mode, user approval input (Enter/"y") was interpreted as EOF, causing Gemini to exit immediately after approval.
+  - Gemini now runs in full interactive TTY mode, so approvals work correctly.
+
 ## 2.4.4
 - **🚀 Pure TTY Stability Fix**
   - Removed `tmux` and `script` layers: Gemini now runs as the direct terminal process.

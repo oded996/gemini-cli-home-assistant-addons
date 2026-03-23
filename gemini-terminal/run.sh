@@ -84,7 +84,7 @@ start_web_terminal() {
 echo -e "\033[0;36mInitializing Gemini CLI (Direct TTY Mode)...\033[0m"
 # We use --no-acp to properly disable background indexing
 # We pass the memory flags directly to node for maximum stability
-/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp --raw-output --accept-raw-output-risk "$@"
+/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp "$@"
 EXIT_CODE=$?
 echo ""
 echo "------------------------------------------------"
