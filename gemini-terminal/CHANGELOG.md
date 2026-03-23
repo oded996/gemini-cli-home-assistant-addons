@@ -132,6 +132,14 @@
   - Stabilized terminal input to prevent premature exit signals.
 
 
+## 2.4.1
+- **🛡️ Persistent Terminal Shield**
+  - Wrapped Gemini in an infinite loop: the terminal window will now **never** close on crash.
+  - Fixed Copy/Paste: Added a low-level command to disable terminal mouse tracking, giving control back to the browser.
+  - Safe Resources: Reduced memory limit to 4GB to prevent OOM kills on smaller hosts.
+  - Maintains full crash diagnostics and interactive approvals.
+
+
 ## 2.4.0
 - **🛡️ Mandatory TTY & PTY Fix**
   - Implemented the "Pseudo-Terminal (PTY) Hack" using the `script` command to ensure Gemini correctly detects an interactive session.

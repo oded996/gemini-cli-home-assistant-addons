@@ -35,7 +35,7 @@ init_environment() {
 EOF
 
     # Node Stability
-    export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
+    export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
     export UV_THREADPOOL_SIZE=64
     export FSWATCH_BACKEND="poll"
 
@@ -45,7 +45,6 @@ EOF
         if [ -n "$api_key" ] && [ "$api_key" != "null" ]; then
             export GOOGLE_API_KEY="$api_key"
             export GEMINI_API_KEY="$api_key"
-            bashio::log.info "Gemini API key configured"
         fi
     fi
 
@@ -75,24 +74,47 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    # Create the TTY-forcing launcher
-    # We use 'script' to force a PTY (Pseudo-Terminal)
-    # This is the industry-standard "PTY Hack"
-    cat > /usr/local/bin/gemini-pty << 'EOF'
+    # Create the internal loop wrapper
+    # This ensures the window NEVER closes, even if Gemini crashes
+    cat > /usr/local/bin/gemini-loop << 'EOF'
 #!/bin/bash
 export TERM=xterm-256color
-# Force a pseudo-terminal for Node.js
-# -q: quiet, -c: command, -e: return exit code, /dev/null: no typescript file
-script -q -e -c "/usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk $@" /dev/null
+while true; do
+    # Force disable mouse tracking at the start of every session
+    # This is a low-level ANSI command that helps with Copy/Paste
+    printf '\e[?1000l' 
+    
+    echo -e "\033[0;36mStarting Gemini CLI (Interactive Mode)...\033[0m"
+    
+    # We use 'script' to provide a clean PTY for the Node.js engine
+    # -q: quiet, -c: command, /dev/null: ignore typescript log
+    script -q -c "/usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk $@" /dev/null
+    
+    EXIT_CODE=$?
+    echo ""
+    echo "------------------------------------------------"
+    echo -e "\033[0;31mGemini session finished with Exit Code: $EXIT_CODE\033[0m"
+    echo "Searching for internal diagnostic logs..."
+    LATEST_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -2 | head -n 1)
+    if [ -n "$LATEST_LOG" ]; then
+        cp "$LATEST_LOG" /config/gemini_internal_trace.log
+        echo "Internal trace extracted to: /config/gemini_internal_trace.log"
+    fi
+    echo "Terminal will stay open. Type 'gemini' to restart manually."
+    echo "------------------------------------------------"
+    # Wait for user input so the screen doesn't clear immediately
+    read -p "Press Enter to drop to shell..."
+    /bin/bash
+done
 EOF
-    chmod +x /usr/local/bin/gemini-pty
+    chmod +x /usr/local/bin/gemini-loop
 
     # Get user configuration
     local gemini_debug=$(bashio::config 'gemini_debug' 'false')
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
-    # Run ttyd: we run gemini-pty DIRECTLY to preserve the TTY link
+    # Run ttyd: we use the loop script to keep the session alive
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -101,7 +123,7 @@ EOF
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        /usr/local/bin/gemini-pty ${debug_flag}
+        /usr/local/bin/gemini-loop ${debug_flag}
 }
 
 # Setup ha-mcp
