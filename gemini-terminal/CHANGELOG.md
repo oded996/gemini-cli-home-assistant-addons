@@ -147,6 +147,10 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.11
+- **🛠️ Fix: trustedFolders.json trust level values**
+  - Corrected values from `true` to `"TRUST_FOLDER"` (valid values: `TRUST_FOLDER`, `TRUST_PARENT`, `DO_NOT_TRUST`).
+
 ## 2.4.10
 - **🛠️ Fix: trustedFolders.json must be a JSON object, not array**
   - Corrected format from `[...]` to `{ "/path": true, ... }` as required by Gemini CLI.

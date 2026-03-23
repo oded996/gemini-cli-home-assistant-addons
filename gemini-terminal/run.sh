@@ -39,10 +39,10 @@ EOF
     # Trust /config and / so the Shell tool is allowed to execute commands
     cat > "$gemini_user_dir/trustedFolders.json" << 'EOF'
 {
-  "/config": true,
-  "/": true,
-  "/data": true,
-  "/opt": true
+  "/config": "TRUST_FOLDER",
+  "/": "TRUST_FOLDER",
+  "/data": "TRUST_FOLDER",
+  "/opt": "TRUST_FOLDER"
 }
 EOF
 
