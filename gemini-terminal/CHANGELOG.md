@@ -147,6 +147,13 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.17
+- **✨ Feature: Install `ha` CLI for Home Assistant Supervisor access**
+  - Downloads the official `ha` binary from `home-assistant/cli` releases during image build.
+  - Auto-detects architecture (amd64 / aarch64 / armv7).
+  - Uses `$SUPERVISOR_TOKEN` and `http://supervisor/` which are automatically available in add-on containers.
+  - Gemini can now run commands like `ha addons list`, `ha core logs`, `ha services restart`, etc.
+
 ## 2.4.16
 - **🛠️ Fix: Rebuild glibc native modules for Alpine musl libc**
   - `tree-sitter-bash` ships only glibc prebuilds; `node-gyp-build` loads these over locally compiled code, causing SIGSEGV when the Shell tool parses bash commands.

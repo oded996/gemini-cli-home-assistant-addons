@@ -53,6 +53,20 @@ RUN apk add --no-cache --virtual .build-deps \
     && npm cache clean --force \
     && apk del --no-cache .build-deps
 
+# Install ha CLI so Gemini can run 'ha' commands to control Home Assistant.
+# The binary connects to http://supervisor/ using $SUPERVISOR_TOKEN, both of
+# which are automatically available inside HA add-on containers.
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  HA_ARCH="amd64" ;; \
+        aarch64) HA_ARCH="aarch64" ;; \
+        armv7l)  HA_ARCH="armv7" ;; \
+        *) echo "Unsupported arch for ha CLI: $ARCH" && exit 1 ;; \
+    esac && \
+    curl -fsSL -o /usr/local/bin/ha \
+        "https://github.com/home-assistant/cli/releases/latest/download/ha_${HA_ARCH}" && \
+    chmod +x /usr/local/bin/ha
+
 # Install uv for running ha-mcp (Python package manager/runner)
 RUN apk add --no-cache uv
 
