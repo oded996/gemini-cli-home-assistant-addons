@@ -147,6 +147,10 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.10
+- **🛠️ Fix: trustedFolders.json must be a JSON object, not array**
+  - Corrected format from `[...]` to `{ "/path": true, ... }` as required by Gemini CLI.
+
 ## 2.4.9
 - **🛠️ Fix: Shell tool exits immediately (untrusted folder)**
   - Root cause identified: Gemini CLI v0.34.0 restricts shell execution to trusted folders.
