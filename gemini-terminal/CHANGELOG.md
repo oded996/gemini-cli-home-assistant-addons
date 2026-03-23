@@ -147,6 +147,13 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.15
+- **🛠️ Fix: Segfault (exit 139) in Shell tool on Alpine Linux**
+  - Root cause: native `.node` modules (e.g. `node-pty` used by the Shell tool) were installed as pre-built glibc binaries. These segfault on Alpine's musl libc.
+  - Fix: Added `npm_config_build_from_source=true` to force all native modules to compile from source against musl libc during the Docker build.
+  - Added `linux-headers` to build deps (required by `node-pty`).
+  - The segfault was previously masked by the Gemini launcher architecture converting exit 139 → exit 1.
+
 ## 2.4.14
 - **🛠️ Fix: Shell tool crashes due to launcher architecture and bad sandbox flag**
   - Root cause: Gemini CLI's `--sandbox false` CLI flag passes the *string* `"false"` as the sandbox type (invalid), causing the shell tool to fail when it tries to set up a sandbox.

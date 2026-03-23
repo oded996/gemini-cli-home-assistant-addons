@@ -24,12 +24,17 @@ RUN apk add --no-cache \
     coreutils \
     util-linux
 
-# Install Gemini CLI via npm (requires build tools for native modules like tree-sitter)
+# Install Gemini CLI via npm.
+# linux-headers is required by node-pty (PTY native module used by the Shell tool).
+# npm_config_build_from_source=true forces ALL native modules to compile from
+# source against Alpine's musl libc instead of using pre-built glibc binaries,
+# which segfault (SIGSEGV/exit 139) on Alpine.
 RUN apk add --no-cache --virtual .build-deps \
     build-base \
     g++ \
     make \
-    && npm install -g @google/gemini-cli@latest \
+    linux-headers \
+    && npm_config_build_from_source=true npm install -g @google/gemini-cli@latest \
     && npm cache clean --force \
     && apk del --no-cache .build-deps
 
