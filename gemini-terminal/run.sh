@@ -25,19 +25,20 @@ init_environment() {
     # Gemini Variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
+    
+    # Force disable telemetry via environment variable (safer than settings.json)
     export GEMINI_TELEMETRY=off
     
-    # Restore standard interactive settings
+    # Valid settings.json
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "default",
-  "screenReader": false,
-  "telemetry": "off"
+  "screenReader": false
 }
 EOF
 
     # Node Stability
-    export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
+    export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
     export UV_THREADPOOL_SIZE=64
     export FSWATCH_BACKEND="poll"
 
@@ -76,24 +77,19 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    # Determine binary paths
     local node_bin=$(which node)
     local gemini_bin=$(which gemini)
     
     # We use tmux to provide the persistent TTY
-    # This is much more stable than the 'script' command hack
     tmux kill-session -t gemini 2>/dev/null || true
     
-    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --acp false --raw-output --accept-raw-output-risk"
+    # CRITICAL: We pass the memory limit DIRECTLY to the node command here
+    # This ensures that even large tasks have enough RAM to complete
+    local gemini_cmd="${node_bin} --max-old-space-size=8192 --stack-size=10000 ${gemini_bin} --sandbox false --acp false --raw-output --accept-raw-output-risk"
     
-    bashio::log.info "Launching Gemini in tmux..."
+    bashio::log.info "Launching Gemini in tmux (Memory Unlocked)..."
     # Disable mouse tracking for copy/paste support
-    tmux new-session -d -s gemini "tmux set-option -g mouse off; ${gemini_cmd}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
-
-    # Get user configuration
-    local gemini_debug=$(bashio::config 'gemini_debug' 'false')
-    local debug_flag=""
-    [ "$gemini_debug" = "true" ] && debug_flag="--debug"
+    tmux new-session -d -s gemini "tmux set-option -g mouse off; ${gemini_cmd}; echo ''; echo 'Gemini session ended.'; exec bash"
 
     # Run ttyd: we attach to the tmux session
     exec ttyd \

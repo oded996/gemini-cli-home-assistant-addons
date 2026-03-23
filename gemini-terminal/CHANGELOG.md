@@ -132,6 +132,13 @@
   - Stabilized terminal input to prevent premature exit signals.
 
 
+## 2.4.3
+- **🛠️ Config & Memory Fix**
+  - Fixed "Invalid Input" configuration warning by removing the invalid telemetry key.
+  - Explicitly unlocked 8GB RAM for the Node.js process to prevent crashes on complex tasks.
+  - Maintains native tmux TTY for stability.
+
+
 ## 2.4.2
 - **🛠️ TTY Stability Update**
   - Replaced unstable `script` command with a native `tmux` TTY manager.
