@@ -147,6 +147,11 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.8
+- **🔍 Diagnostics: Enable --debug flag**
+  - Added `--debug` to Gemini command so verbose output is captured in `/config/gemini_stderr.log`.
+  - Needed to diagnose shell tool crash at execution time (not approval time).
+
 ## 2.4.7
 - **🔍 Crash Diagnostics: Capture stderr**
   - Redirected Gemini stderr to `/config/gemini_stderr.log` to capture Node.js exceptions on crash.
