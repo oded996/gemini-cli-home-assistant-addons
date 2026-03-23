@@ -13,24 +13,26 @@ init_environment() {
 
     bashio::log.info "Initializing Gemini CLI environment..."
 
-    mkdir -p "$data_home" "$config_dir/gemini" "$gemini_user_dir/logs" "/data/.cache" "/data/.local"
+    mkdir -p "$data_home" "$config_dir/gemini" "$gemini_user_dir" "/data/.cache" "/data/.local"
     chmod 755 "$data_home" "$config_dir" "$gemini_user_dir"
 
     export HOME="$data_home"
     export XDG_CONFIG_HOME="$config_dir"
     export LANG="en_US.UTF-8"
     export LC_ALL="en_US.UTF-8"
+    export TERM="xterm-256color"
     
     # Gemini Variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
     
-    # Stable settings
+    # Restore standard interactive settings
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "default",
-  "screenReader": false
+  "screenReader": false,
+  "telemetry": "off"
 }
 EOF
 
@@ -74,47 +76,26 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    # Create the internal loop wrapper
-    # This ensures the window NEVER closes, even if Gemini crashes
-    cat > /usr/local/bin/gemini-loop << 'EOF'
-#!/bin/bash
-export TERM=xterm-256color
-while true; do
-    # Force disable mouse tracking at the start of every session
-    # This is a low-level ANSI command that helps with Copy/Paste
-    printf '\e[?1000l' 
+    # Determine binary paths
+    local node_bin=$(which node)
+    local gemini_bin=$(which gemini)
     
-    echo -e "\033[0;36mStarting Gemini CLI (Interactive Mode)...\033[0m"
+    # We use tmux to provide the persistent TTY
+    # This is much more stable than the 'script' command hack
+    tmux kill-session -t gemini 2>/dev/null || true
     
-    # We use 'script' to provide a clean PTY for the Node.js engine
-    # -q: quiet, -c: command, /dev/null: ignore typescript log
-    script -q -c "/usr/local/bin/gemini --sandbox false --acp false --raw-output --accept-raw-output-risk $@" /dev/null
+    local gemini_cmd="${node_bin} --stack-size=10000 ${gemini_bin} --sandbox false --acp false --raw-output --accept-raw-output-risk"
     
-    EXIT_CODE=$?
-    echo ""
-    echo "------------------------------------------------"
-    echo -e "\033[0;31mGemini session finished with Exit Code: $EXIT_CODE\033[0m"
-    echo "Searching for internal diagnostic logs..."
-    LATEST_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -2 | head -n 1)
-    if [ -n "$LATEST_LOG" ]; then
-        cp "$LATEST_LOG" /config/gemini_internal_trace.log
-        echo "Internal trace extracted to: /config/gemini_internal_trace.log"
-    fi
-    echo "Terminal will stay open. Type 'gemini' to restart manually."
-    echo "------------------------------------------------"
-    # Wait for user input so the screen doesn't clear immediately
-    read -p "Press Enter to drop to shell..."
-    /bin/bash
-done
-EOF
-    chmod +x /usr/local/bin/gemini-loop
+    bashio::log.info "Launching Gemini in tmux..."
+    # Disable mouse tracking for copy/paste support
+    tmux new-session -d -s gemini "tmux set-option -g mouse off; ${gemini_cmd}; echo ''; echo 'Gemini session ended. Type gemini to restart.'; exec bash"
 
     # Get user configuration
     local gemini_debug=$(bashio::config 'gemini_debug' 'false')
     local debug_flag=""
     [ "$gemini_debug" = "true" ] && debug_flag="--debug"
 
-    # Run ttyd: we use the loop script to keep the session alive
+    # Run ttyd: we attach to the tmux session
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -123,7 +104,7 @@ EOF
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        /usr/local/bin/gemini-loop ${debug_flag}
+        bash -c "echo -e '\033[0;36mAttaching to Gemini session...\033[0m'; sleep 1; tmux attach-session -t gemini"
 }
 
 # Setup ha-mcp

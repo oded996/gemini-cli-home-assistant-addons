@@ -132,6 +132,14 @@
   - Stabilized terminal input to prevent premature exit signals.
 
 
+## 2.4.2
+- **🛠️ TTY Stability Update**
+  - Replaced unstable `script` command with a native `tmux` TTY manager.
+  - This prevents "Clean Exits" (Code 0) during heavy file searches like `find /`.
+  - Fixed TTY detection to ensure Node.js doesn't think it's being piped.
+  - Maintains mouse-off mode for native browser copy/paste.
+
+
 ## 2.4.1
 - **🛡️ Persistent Terminal Shield**
   - Wrapped Gemini in an infinite loop: the terminal window will now **never** close on crash.
