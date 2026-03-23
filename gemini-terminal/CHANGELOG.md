@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.19
+- **✨ Smooth Scrolling & Huge History**
+  - Enabled `mouse on` in `tmux` to allow mouse-wheel and trackpad scrolling.
+  - Set `history-limit` to **100,000 lines**: never lose previous work in long sessions.
+  - Added `aggressive-resize` to ensure terminal follows browser window size correctly.
+  - Added "Shift+Select" tip for native copy/paste while mouse mode is active.
+
+
 ## 2.4.18
 - **🛡️ Persistent Session Support**
   - Gemini now runs in a background `tmux` session: survives browser reloads and laptop sleep.

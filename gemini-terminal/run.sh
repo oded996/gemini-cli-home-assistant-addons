@@ -39,7 +39,7 @@ init_environment() {
 }
 EOF
 
-    # Trust /config and / so the Shell tool is allowed to execute commands
+    # Trust folders for Shell tool
     cat > "$gemini_user_dir/trustedFolders.json" << 'EOF'
 {
   "/config": "TRUST_FOLDER",
@@ -93,27 +93,26 @@ start_web_terminal() {
     # Create the direct-execution wrapper
     cat > /usr/local/bin/gemini-direct << 'EOF'
 #!/bin/bash
-echo -e "\033[0;36mInitializing Gemini CLI (Persistent Session)...\033[0m"
-# Redirect stderr to a log file for crash diagnostics
+echo -e "\033[0;36mInitializing Gemini CLI (Persistent & Scrollable)...\033[0m"
 /usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --no-acp "$@" 2>/config/gemini_stderr.log
 EXIT_CODE=$?
 echo ""
 echo "------------------------------------------------"
 echo "Gemini process ended with Exit Code: $EXIT_CODE"
-# Copy internal trace log if available
 LATEST_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -2 | head -n 1)
 [ -n "$LATEST_LOG" ] && cp "$LATEST_LOG" /config/gemini_internal_trace.log
-echo "Crash logs available in /config/gemini_stderr.log"
 echo "------------------------------------------------"
 exec bash
 EOF
     chmod +x /usr/local/bin/gemini-direct
 
-    # Start persistent tmux session if it doesn't exist
+    # Start persistent tmux session with scrolling and huge history
     if ! tmux has-session -t gemini 2>/dev/null; then
-        bashio::log.info "Creating new persistent tmux session..."
-        # We disable mouse tracking inside tmux to ensure native browser Copy/Paste works
-        tmux new-session -d -s gemini "tmux set-option -g mouse off; /usr/local/bin/gemini-direct"
+        bashio::log.info "Creating new persistent tmux session with 100k history..."
+        # 1. Set mouse on for scrolling
+        # 2. Set history limit to 100,000 lines
+        # 3. Enable aggressive-resize for browser compatibility
+        tmux new-session -d -s gemini "tmux set-option -g mouse on; tmux set-option -g history-limit 100000; tmux set-window-option -g aggressive-resize on; /usr/local/bin/gemini-direct"
     fi
 
     # Run ttyd: we attach to the persistent tmux session
@@ -125,7 +124,7 @@ EOF
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        tmux attach -t gemini
+        bash -c "echo -e '\033[0;33mTIP: Use Shift+Select (or Option+Select on Mac) to copy text.\033[0m'; sleep 1; tmux attach -t gemini"
 }
 
 # Setup ha-mcp
@@ -140,7 +139,6 @@ setup_ha_mcp() {
 # Main execution
 main() {
     init_environment
-    # Ensure tmux is available
     apk add --no-cache ttyd jq curl tmux coreutils util-linux >/dev/null
     setup_ha_mcp
     start_web_terminal
