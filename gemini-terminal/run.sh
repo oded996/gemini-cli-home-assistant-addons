@@ -36,6 +36,11 @@ init_environment() {
 }
 EOF
 
+    # Trust /config and / so the Shell tool is allowed to execute commands
+    cat > "$gemini_user_dir/trustedFolders.json" << 'EOF'
+["/config", "/", "/data", "/opt"]
+EOF
+
     # Node Stability
     export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
     export UV_THREADPOOL_SIZE=64
@@ -84,7 +89,7 @@ echo -e "\033[0;36mInitializing Gemini CLI (Direct TTY Mode)...\033[0m"
 # Redirect stderr to a log file for crash diagnostics (UI uses stdout, so this is safe)
 # We use --no-acp to properly disable background indexing
 # We pass the memory flags directly to node for maximum stability
-/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp --debug "$@" 2>/config/gemini_stderr.log
+/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp "$@" 2>/config/gemini_stderr.log
 EXIT_CODE=$?
 echo ""
 echo "------------------------------------------------"

@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.9
+- **🛠️ Fix: Shell tool exits immediately (untrusted folder)**
+  - Root cause identified: Gemini CLI v0.34.0 restricts shell execution to trusted folders.
+  - `/config` was not trusted, so any Shell tool call exited with code 1 immediately.
+  - Pre-populates `trustedFolders.json` with `/config`, `/`, `/data`, and `/opt` on startup.
+  - File-reading tools (FindFiles, SearchText) were unaffected; only Shell was blocked.
+  - Removed temporary `--debug` flag added for diagnosis.
+
 ## 2.4.8
 - **🔍 Diagnostics: Enable --debug flag**
   - Added `--debug` to Gemini command so verbose output is captured in `/config/gemini_stderr.log`.
