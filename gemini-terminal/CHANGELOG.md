@@ -147,6 +147,11 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.13
+- **🔍 Diagnostics: Add --trace-exit to Node.js**
+  - `--trace-exit` prints the exact callsite where `process.exit()` is called to stderr.
+  - Will finally show the real source of the silent exit code 1.
+
 ## 2.4.12
 - **🔍 Diagnostics: Remove --no-warnings from NODE_OPTIONS**
   - `--no-warnings` was suppressing unhandled Promise rejection output, making stderr empty even when Gemini crashed.
