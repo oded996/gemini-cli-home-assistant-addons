@@ -26,13 +26,18 @@ init_environment() {
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
+    # Tell Gemini it's already in the "relaunched" process so it runs the UI
+    # directly without spawning a child. This also prevents auto-updates inside
+    # the container (desired behaviour - updates come from image rebuilds).
+    export GEMINI_CLI_NO_RELAUNCH=1
     
     # Restore standard interactive settings
     cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "default",
   "screenReader": false,
-  "acp": false
+  "acp": false,
+  "sandbox": false
 }
 EOF
 
@@ -94,7 +99,7 @@ echo -e "\033[0;36mInitializing Gemini CLI (Direct TTY Mode)...\033[0m"
 # Redirect stderr to a log file for crash diagnostics (UI uses stdout, so this is safe)
 # We use --no-acp to properly disable background indexing
 # We pass the memory flags directly to node for maximum stability
-/usr/bin/node --max-old-space-size=8192 --stack-size=10000 --trace-exit /usr/local/bin/gemini --sandbox false --no-acp "$@" 2>/config/gemini_stderr.log
+/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --no-acp "$@" 2>/config/gemini_stderr.log
 EXIT_CODE=$?
 echo ""
 echo "------------------------------------------------"

@@ -147,6 +147,15 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.14
+- **🛠️ Fix: Shell tool crashes due to launcher architecture and bad sandbox flag**
+  - Root cause: Gemini CLI's `--sandbox false` CLI flag passes the *string* `"false"` as the sandbox type (invalid), causing the shell tool to fail when it tries to set up a sandbox.
+  - Root cause 2: Gemini's two-process launcher spawns a child process; the child's shell tool failure exits with code 1, which the parent propagates — masking the real error.
+  - Fix: Set `GEMINI_CLI_NO_RELAUNCH=1` so Gemini runs directly without spawning a child launcher process. Also disables container auto-updates (desired: updates come from image rebuilds).
+  - Fix: Moved `sandbox: false` (boolean) into `settings.json` instead of CLI flag. CLI string `"false"` was being treated as an invalid sandbox type.
+  - Removed `--sandbox false` from the Node.js command.
+  - Removed diagnostic `--trace-exit` flag.
+
 ## 2.4.13
 - **🔍 Diagnostics: Add --trace-exit to Node.js**
   - `--trace-exit` prints the exact callsite where `process.exit()` is called to stderr.
