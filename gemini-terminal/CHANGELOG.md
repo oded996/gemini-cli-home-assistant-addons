@@ -147,6 +147,11 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.12
+- **🔍 Diagnostics: Remove --no-warnings from NODE_OPTIONS**
+  - `--no-warnings` was suppressing unhandled Promise rejection output, making stderr empty even when Gemini crashed.
+  - Removing it allows the actual error to appear in `/config/gemini_stderr.log`.
+
 ## 2.4.11
 - **🛠️ Fix: trustedFolders.json trust level values**
   - Corrected values from `true` to `"TRUST_FOLDER"` (valid values: `TRUST_FOLDER`, `TRUST_PARENT`, `DO_NOT_TRUST`).

@@ -47,7 +47,7 @@ EOF
 EOF
 
     # Node Stability
-    export NODE_OPTIONS="--max-old-space-size=8192 --no-warnings"
+    export NODE_OPTIONS="--max-old-space-size=8192"
     export UV_THREADPOOL_SIZE=64
     export FSWATCH_BACKEND="poll"
 
