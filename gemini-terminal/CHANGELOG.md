@@ -147,6 +147,12 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.7
+- **🔍 Crash Diagnostics: Capture stderr**
+  - Redirected Gemini stderr to `/config/gemini_stderr.log` to capture Node.js exceptions on crash.
+  - After a crash, run `cat /config/gemini_stderr.log` in the bash shell to see the actual error.
+  - Does not affect interactive UI (which runs on stdout).
+
 ## 2.4.6
 - **🛠️ Fix: Invalid settings.json causes exit after approval**
   - Removed invalid `"telemetry": "off"` string value from `settings.json` (schema expects boolean, string caused validation error).

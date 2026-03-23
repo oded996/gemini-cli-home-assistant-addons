@@ -81,17 +81,21 @@ start_web_terminal() {
     cat > /usr/local/bin/gemini-direct << 'EOF'
 #!/bin/bash
 echo -e "\033[0;36mInitializing Gemini CLI (Direct TTY Mode)...\033[0m"
+# Redirect stderr to a log file for crash diagnostics (UI uses stdout, so this is safe)
 # We use --no-acp to properly disable background indexing
 # We pass the memory flags directly to node for maximum stability
-/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp "$@"
+/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --sandbox false --no-acp "$@" 2>/config/gemini_stderr.log
 EXIT_CODE=$?
 echo ""
 echo "------------------------------------------------"
 echo "Gemini process ended with Exit Code: $EXIT_CODE"
-echo "Check /config/gemini_internal_trace.log for details."
-# Copy trace if available
+# Copy internal trace log if available
 LATEST_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -2 | head -n 1)
 [ -n "$LATEST_LOG" ] && cp "$LATEST_LOG" /config/gemini_internal_trace.log
+echo "Crash logs:"
+echo "  stderr : /config/gemini_stderr.log"
+echo "  trace  : /config/gemini_internal_trace.log"
+echo "Run: cat /config/gemini_stderr.log"
 echo "------------------------------------------------"
 exec bash
 EOF
