@@ -147,6 +147,13 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.16
+- **🛠️ Fix: Rebuild glibc native modules for Alpine musl libc**
+  - `tree-sitter-bash` ships only glibc prebuilds; `node-gyp-build` loads these over locally compiled code, causing SIGSEGV when the Shell tool parses bash commands.
+  - Fix: delete `tree-sitter-bash/prebuilds/` and rebuild from source during Docker build so the musl-compiled binary is used.
+  - Also replaced `@lydell/node-pty-linux-x64/pty.node` (glibc prebuild) with the musl-compiled `node-pty/build/Release/pty.node`.
+  - Added `node-gyp` global install to make the rebuild command available.
+
 ## 2.4.15
 - **🛠️ Fix: Segfault (exit 139) in Shell tool on Alpine Linux**
   - Root cause: native `.node` modules (e.g. `node-pty` used by the Shell tool) were installed as pre-built glibc binaries. These segfault on Alpine's musl libc.
