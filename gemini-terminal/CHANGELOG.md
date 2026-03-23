@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.18
+- **🛡️ Persistent Session Support**
+  - Gemini now runs in a background `tmux` session: survives browser reloads and laptop sleep.
+  - Re-attach to your work at any time by simply opening the add-on UI.
+  - Forced `mouse off` in tmux to allow native browser text selection (Copy/Paste).
+  - Maintains all previous stability fixes: Native builds, NO_RELAUNCH, and Sandbox-off.
+
+
 ## 2.4.17
 - **✨ Feature: Install `ha` CLI for Home Assistant Supervisor access**
   - Downloads the official `ha` binary from `home-assistant/cli` releases during image build.

@@ -20,15 +20,13 @@ init_environment() {
     export XDG_CONFIG_HOME="$config_dir"
     export LANG="en_US.UTF-8"
     export LC_ALL="en_US.UTF-8"
-    export TERM="xterm"
+    export TERM="xterm-256color"
     
     # Gemini Variables
     export GEMINI_CONFIG_DIR="$gemini_config_dir"
     export GEMINI_HOME="/data"
     export GEMINI_TELEMETRY=off
-    # Tell Gemini it's already in the "relaunched" process so it runs the UI
-    # directly without spawning a child. This also prevents auto-updates inside
-    # the container (desired behaviour - updates come from image rebuilds).
+    # Persistence Fix: Prevent Gemini from relaunching itself
     export GEMINI_CLI_NO_RELAUNCH=1
     
     # Restore standard interactive settings
@@ -92,13 +90,11 @@ start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
 
-    # Create a direct-execution wrapper (no tmux, no script)
+    # Create the direct-execution wrapper
     cat > /usr/local/bin/gemini-direct << 'EOF'
 #!/bin/bash
-echo -e "\033[0;36mInitializing Gemini CLI (Direct TTY Mode)...\033[0m"
-# Redirect stderr to a log file for crash diagnostics (UI uses stdout, so this is safe)
-# We use --no-acp to properly disable background indexing
-# We pass the memory flags directly to node for maximum stability
+echo -e "\033[0;36mInitializing Gemini CLI (Persistent Session)...\033[0m"
+# Redirect stderr to a log file for crash diagnostics
 /usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --no-acp "$@" 2>/config/gemini_stderr.log
 EXIT_CODE=$?
 echo ""
@@ -107,18 +103,20 @@ echo "Gemini process ended with Exit Code: $EXIT_CODE"
 # Copy internal trace log if available
 LATEST_LOG=$(find /data -name "*.log" -path "*/.gemini/logs/*" -type f -mmin -2 | head -n 1)
 [ -n "$LATEST_LOG" ] && cp "$LATEST_LOG" /config/gemini_internal_trace.log
-echo "Crash logs:"
-echo "  stderr : /config/gemini_stderr.log"
-echo "  trace  : /config/gemini_internal_trace.log"
-echo "Run: cat /config/gemini_stderr.log"
+echo "Crash logs available in /config/gemini_stderr.log"
 echo "------------------------------------------------"
 exec bash
 EOF
     chmod +x /usr/local/bin/gemini-direct
 
-    # Run ttyd: 
-    # 1. ping-interval=1 keeps the proxy alive during long tasks
-    # 2. No tmux means native browser selection (COPY/PASTE) works
+    # Start persistent tmux session if it doesn't exist
+    if ! tmux has-session -t gemini 2>/dev/null; then
+        bashio::log.info "Creating new persistent tmux session..."
+        # We disable mouse tracking inside tmux to ensure native browser Copy/Paste works
+        tmux new-session -d -s gemini "tmux set-option -g mouse off; /usr/local/bin/gemini-direct"
+    fi
+
+    # Run ttyd: we attach to the persistent tmux session
     exec ttyd \
         --port "${port}" \
         --interface 0.0.0.0 \
@@ -127,7 +125,7 @@ EOF
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        /usr/local/bin/gemini-direct
+        tmux attach -t gemini
 }
 
 # Setup ha-mcp
@@ -142,6 +140,7 @@ setup_ha_mcp() {
 # Main execution
 main() {
     init_environment
+    # Ensure tmux is available
     apk add --no-cache ttyd jq curl tmux coreutils util-linux >/dev/null
     setup_ha_mcp
     start_web_terminal
