@@ -147,6 +147,12 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.6
+- **🛠️ Fix: Invalid settings.json causes exit after approval**
+  - Removed invalid `"telemetry": "off"` string value from `settings.json` (schema expects boolean, string caused validation error).
+  - Telemetry is already disabled via `GEMINI_TELEMETRY=off` environment variable.
+  - Config validation failure was causing Gemini to exit with code 1 when executing tool calls.
+
 ## 2.4.5
 - **🛠️ Fix: Approval Causes Exit**
   - Removed `--raw-output` and `--accept-raw-output-risk` flags that put Gemini in non-interactive pipe mode.

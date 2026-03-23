@@ -32,7 +32,6 @@ init_environment() {
 {
   "approvalMode": "default",
   "screenReader": false,
-  "telemetry": "off",
   "acp": false
 }
 EOF
