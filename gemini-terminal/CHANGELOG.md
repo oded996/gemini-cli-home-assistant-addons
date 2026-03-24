@@ -147,6 +147,11 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.21
+- **🛠️ Startup Fix**
+  - Fixed a typo in the `tmux attach` command that was preventing the UI from loading.
+
+
 ## 2.4.20
 - **🛠️ Boot Loop Fix**
   - Fixed "unbound variable" error in startup script when Gemini API key is not provided.

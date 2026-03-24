@@ -124,7 +124,7 @@ EOF
         --client-option enableReconnect=true \
         --client-option copyOnSelect=true \
         --client-option "theme={\"background\":\"#1a1b26\",\"foreground\":\"#c0caf5\",\"cursor\":\"#d97757\"}" \
-        bash -c "echo -e '\033[0;33mTIP: Use Shift+Select (or Option+Select on Mac) to copy text.\033[0m'; sleep 1; tmux attach-t gemini"
+        bash -c "echo -e '\033[0;33mTIP: Use Shift+Select (or Option+Select on Mac) to copy text.\033[0m'; sleep 1; tmux attach -t gemini"
 }
 
 # Setup ha-mcp
