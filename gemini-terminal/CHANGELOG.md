@@ -147,6 +147,12 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.4.20
+- **🛠️ Boot Loop Fix**
+  - Fixed "unbound variable" error in startup script when Gemini API key is not provided.
+  - Allows add-on to start normally even without a key (so you can configure it via the terminal).
+
+
 ## 2.4.19
 - **✨ Smooth Scrolling & Huge History**
   - Enabled `mouse on` in `tmux` to allow mouse-wheel and trackpad scrolling.
