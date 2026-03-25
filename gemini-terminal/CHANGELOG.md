@@ -192,6 +192,13 @@
   - Full persistence of GitHub authentication via the existing `/data` volume.
 
 
+## 2.5.6
+- **🚀 Stable Capability: GitHub CLI Integration**
+  - Added the official `gh` (GitHub CLI) tool into the add-on image.
+  - Reverted to the stable `v2.4.x` foundation with manual `musl` rebuilds for native modules.
+  - Maintains full capability for `ha` CLI and `ha-mcp` (via pip).
+
+
 ## 2.4.21
 - **🛠️ Startup Fix**
   - Fixed a typo in the `tmux attach` command that was preventing the UI from loading.
