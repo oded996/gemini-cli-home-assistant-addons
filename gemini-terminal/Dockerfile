@@ -4,6 +4,9 @@ FROM $BUILD_FROM
 # Set shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# Use Home Assistant build arguments
+ARG BUILD_ARCH
+
 # Install base requirements
 RUN apk add --no-cache \
     nodejs \
@@ -23,7 +26,6 @@ RUN apk add --no-cache \
     github-cli
 
 # Install Gemini CLI and MCP helper globally
-# Use --build-from-source to ensure compatibility with Alpine (musl)
 RUN npm install -g @google/gemini-cli \
     && npm install -g @modelcontextprotocol/server-home-assistant \
     && pip3 install --no-cache-dir ha-mcp==3.5.1 --break-system-packages
@@ -34,14 +36,15 @@ RUN npm install -g node-gyp \
     && npm rebuild --build-from-source \
     && find . -name "*.node" -exec strip {} +
 
-# Install Home Assistant CLI for Supervisor access (Architecture Aware)
+# Install Home Assistant CLI for Supervisor access (Using BUILD_ARCH)
+# Maps HA arch names to GitHub release arch names
 RUN \
-    case $(uname -m) in \
-        x86_64) export ARCH="amd64" ;; \
-        aarch64) export ARCH="aarch64" ;; \
-        armv7l) export ARCH="armv7" ;; \
-        *) export ARCH="amd64" ;; \
-    esac \
+    if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="aarch64"; \
+    elif [ "${BUILD_ARCH}" = "amd64" ]; then ARCH="amd64"; \
+    elif [ "${BUILD_ARCH}" = "armv7" ]; then ARCH="armv7"; \
+    elif [ "${BUILD_ARCH}" = "armhf" ]; then ARCH="armhf"; \
+    elif [ "${BUILD_ARCH}" = "i386" ]; then ARCH="i386"; \
+    else ARCH="amd64"; fi \
     && curl -L -s "https://github.com/home-assistant/cli/releases/download/4.33.0/ha_${ARCH}" -o /usr/local/bin/ha \
     && chmod +x /usr/local/bin/ha
 

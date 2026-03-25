@@ -147,6 +147,13 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.5.2
+- **🛠️ Final Build Error Fix**
+  - Fixed "Unknown Error" during image build by using the official `BUILD_ARCH` Home Assistant build argument.
+  - Replaced manual `uname -m` with the built-in HA Supervisor architecture detection.
+  - This ensures the correct `ha` CLI binary is always downloaded regardless of your system.
+
+
 ## 2.5.1
 - **🛠️ Universal Build Fix**
   - Fixed "Unknown Error" during build by adding architecture-aware `ha` CLI download.
