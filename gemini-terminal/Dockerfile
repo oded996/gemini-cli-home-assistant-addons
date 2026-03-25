@@ -8,8 +8,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG BUILD_ARCH
 
 # Install base requirements
-# Note: nodejs/npm are pre-installed in the base-nodejs image
+# Explicitly adding nodejs and npm back for Alpine 3.21 compatibility
 RUN apk add --no-cache \
+    nodejs \
+    npm \
     ttyd \
     bash \
     curl \
@@ -25,12 +27,12 @@ RUN apk add --no-cache \
     github-cli
 
 # Install Gemini CLI and MCP helper globally
-# We use --unsafe-perm for better global installation behavior in containers
+# We use --unsafe-perm to ensure the global binaries are linked correctly
 RUN npm install -g --unsafe-perm @google/gemini-cli \
     && npm install -g --unsafe-perm @modelcontextprotocol/server-home-assistant \
     && pip3 install --no-cache-dir ha-mcp==3.5.1 --break-system-packages
 
-# Install Home Assistant CLI for Supervisor access
+# Install Home Assistant CLI for Supervisor access (Architecture Aware)
 RUN \
     if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="aarch64"; \
     elif [ "${BUILD_ARCH}" = "amd64" ]; then ARCH="amd64"; \

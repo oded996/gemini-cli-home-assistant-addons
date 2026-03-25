@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.5.4
+- **🛠️ Reverted to Universal Base for Build Stability**
+  - Reverted `build.yaml` to the standard Alpine-based Home Assistant base image.
+  - Re-added explicit `nodejs` and `npm` installs for better compatibility across all HA environments.
+  - Improved `ha` CLI download logic to handle more architecture names.
+  - This should fix the "Instant Build Failure" on non-standard systems.
+
+
 ## 2.5.3
 - **🚀 Node-Optimized Build**
   - Switched to the official `home-assistant-base-nodejs:22` base images for all architectures.
