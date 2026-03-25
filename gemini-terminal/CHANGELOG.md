@@ -147,6 +147,13 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.5.0
+- **🚀 New Capability: GitHub CLI Integration**
+  - Added the official `gh` (GitHub CLI) tool into the add-on image.
+  - Gemini can now natively manage pull requests, issues, and releases from the terminal.
+  - Full persistence of GitHub authentication via the existing `/data` volume.
+
+
 ## 2.4.21
 - **🛠️ Startup Fix**
   - Fixed a typo in the `tmux attach` command that was preventing the UI from loading.

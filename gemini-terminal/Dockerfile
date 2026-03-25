@@ -1,87 +1,52 @@
 ARG BUILD_FROM
-FROM ${BUILD_FROM}
+FROM $BUILD_FROM
 
-# Install system packages and development tools
+# Set shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Install base requirements
 RUN apk add --no-cache \
-    bash \
-    curl \
-    nano \
     nodejs \
     npm \
+    ttyd \
+    bash \
+    curl \
+    git \
+    jq \
+    tmux \
+    coreutils \
+    util-linux \
     python3 \
     py3-pip \
-    py3-requests \
-    py3-aiohttp \
-    py3-yaml \
-    py3-beautifulsoup4 \
-    git \
-    vim \
-    wget \
-    jq \
-    tree \
-    tmux \
-    yq \
-    coreutils \
-    util-linux
-
-# Install Gemini CLI via npm, then rebuild native modules for Alpine musl libc.
-#
-# Problem: tree-sitter-bash ships glibc-only prebuilds (prebuilds/linux-x64/).
-# node-gyp-build prefers prebuilds/ over build/, so the glibc binary is loaded
-# at runtime, causing SIGSEGV (exit 139) when the Shell tool parses bash commands.
-#
-# Fix: delete the glibc prebuilds, then rebuild from source so node-gyp-build
-# falls through to build/Release/ which is compiled against musl.
-#
-# @lydell/node-pty-linux-x64 is also a glibc prebuild; replace it with the
-# musl-compiled pty.node from node-pty/build/Release/.
-RUN apk add --no-cache --virtual .build-deps \
     build-base \
-    g++ \
-    make \
     linux-headers \
-    && npm install -g node-gyp @google/gemini-cli@latest \
-    && GEMINI_MODS=/usr/local/lib/node_modules/@google/gemini-cli/node_modules \
-    # Rebuild tree-sitter-bash for musl
-    && TSDIR="$GEMINI_MODS/tree-sitter-bash" \
-    && rm -rf "$TSDIR/prebuilds" \
-    && cd "$TSDIR" && node-gyp rebuild \
-    # Replace @lydell/node-pty-linux-x64 glibc binary with the musl-compiled one
-    && LYDELL_PTY="$GEMINI_MODS/@lydell/node-pty-linux-x64/pty.node" \
-    && COMPILED_PTY="$GEMINI_MODS/node-pty/build/Release/pty.node" \
-    && [ -f "$LYDELL_PTY" ] && [ -f "$COMPILED_PTY" ] && cp "$COMPILED_PTY" "$LYDELL_PTY" || true \
-    && npm cache clean --force \
-    && apk del --no-cache .build-deps
+    github-cli
 
-# Install ha CLI so Gemini can run 'ha' commands to control Home Assistant.
-# The binary connects to http://supervisor/ using $SUPERVISOR_TOKEN, both of
-# which are automatically available inside HA add-on containers.
-RUN ARCH=$(uname -m) && \
-    case "$ARCH" in \
-        x86_64)  HA_ARCH="amd64" ;; \
-        aarch64) HA_ARCH="aarch64" ;; \
-        armv7l)  HA_ARCH="armv7" ;; \
-        *) echo "Unsupported arch for ha CLI: $ARCH" && exit 1 ;; \
-    esac && \
-    curl -fsSL -o /usr/local/bin/ha \
-        "https://github.com/home-assistant/cli/releases/latest/download/ha_${HA_ARCH}" && \
-    chmod +x /usr/local/bin/ha
+# Install Gemini CLI and MCP helper globally
+# Use --build-from-source to ensure compatibility with Alpine (musl)
+RUN npm install -g @google/gemini-cli \
+    && npm install -g @modelcontextprotocol/server-home-assistant \
+    && pip3 install --no-cache-dir ha-mcp==3.5.1 --break-system-packages
 
-# Install uv for running ha-mcp (Python package manager/runner)
-RUN apk add --no-cache uv
+# Rebuild native modules from source to avoid glibc segmentation faults
+RUN npm install -g node-gyp \
+    && cd /usr/lib/node_modules/@google/gemini-cli \
+    && npm rebuild --build-from-source \
+    && find . -name "*.node" -exec strip {} +
 
-# Pre-install ha-mcp to ensure it's ready to use
-RUN pip3 install --break-system-packages --no-cache-dir ha-mcp==3.5.1
+# Install Home Assistant CLI for Supervisor access
+RUN curl -L -s https://github.com/home-assistant/cli/releases/download/4.33.0/ha_amd64 -o /usr/local/bin/ha \
+    && chmod +x /usr/local/bin/ha
 
-# Create directory for Gemini configuration and set working directory
-RUN mkdir -p /config/gemini-config
-WORKDIR /config
+# Copy root filesystem
+COPY rootfs /
 
-# Copy startup script and modular scripts
-COPY run.sh /run.sh
-COPY scripts/ /opt/scripts/
-RUN chmod +x /run.sh \
-    && chmod +x /opt/scripts/*.sh
+# Set environment variables
+ENV GEMINI_TELEMETRY=off \
+    GEMINI_CLI_NO_RELAUNCH=1
 
-# Use exec form for better signal handling
+# Expose the terminal port
+EXPOSE 7682
+
+# Start the application
 CMD ["/run.sh"]
