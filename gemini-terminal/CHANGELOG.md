@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.5.5
+- **🛠️ Fixed Build 404 & Missing Scripts**
+  - Fixed "404 Not Found" by removing the non-existent `@modelcontextprotocol/server-home-assistant` npm package.
+  - Re-added `COPY scripts /opt/scripts` to the Dockerfile to restore the Home Assistant MCP integration.
+  - Silenced build-time warnings for `BUILD_FROM` and `npm` flags.
+  - Maintains full capability for `ha-mcp` (via pip) and Gemini CLI.
+
+
 ## 2.5.4
 - **🛠️ Reverted to Universal Base for Build Stability**
   - Reverted `build.yaml` to the standard Alpine-based Home Assistant base image.
