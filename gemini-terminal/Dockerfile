@@ -8,9 +8,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG BUILD_ARCH
 
 # Install base requirements
+# Note: nodejs/npm are pre-installed in the base-nodejs image
 RUN apk add --no-cache \
-    nodejs \
-    npm \
     ttyd \
     bash \
     curl \
@@ -26,18 +25,12 @@ RUN apk add --no-cache \
     github-cli
 
 # Install Gemini CLI and MCP helper globally
-RUN npm install -g @google/gemini-cli \
-    && npm install -g @modelcontextprotocol/server-home-assistant \
+# We use --unsafe-perm for better global installation behavior in containers
+RUN npm install -g --unsafe-perm @google/gemini-cli \
+    && npm install -g --unsafe-perm @modelcontextprotocol/server-home-assistant \
     && pip3 install --no-cache-dir ha-mcp==3.5.1 --break-system-packages
 
-# Rebuild native modules from source to avoid glibc segmentation faults
-RUN npm install -g node-gyp \
-    && cd /usr/lib/node_modules/@google/gemini-cli \
-    && npm rebuild --build-from-source \
-    && find . -name "*.node" -exec strip {} +
-
-# Install Home Assistant CLI for Supervisor access (Using BUILD_ARCH)
-# Maps HA arch names to GitHub release arch names
+# Install Home Assistant CLI for Supervisor access
 RUN \
     if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="aarch64"; \
     elif [ "${BUILD_ARCH}" = "amd64" ]; then ARCH="amd64"; \

@@ -147,6 +147,14 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.5.3
+- **🚀 Node-Optimized Build**
+  - Switched to the official `home-assistant-base-nodejs:22` base images for all architectures.
+  - This ensures a much more stable and faster build process by providing a pre-configured Node.js environment.
+  - Removed slow manual `npm rebuild` and `apk add nodejs` steps.
+  - Improved `npm install` stability with `--unsafe-perm` flag.
+
+
 ## 2.5.2
 - **🛠️ Final Build Error Fix**
   - Fixed "Unknown Error" during image build by using the official `BUILD_ARCH` Home Assistant build argument.
