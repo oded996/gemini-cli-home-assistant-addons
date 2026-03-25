@@ -147,6 +147,13 @@
   - Maintains mouse-off mode for native browser copy/paste.
 
 
+## 2.5.1
+- **🛠️ Universal Build Fix**
+  - Fixed "Unknown Error" during build by adding architecture-aware `ha` CLI download.
+  - Automatically detects AMD64, AARCH64 (Pi), and ARMv7 during the Docker build process.
+  - Corrected file mappings for `run.sh` inside the image.
+
+
 ## 2.5.0
 - **🚀 New Capability: GitHub CLI Integration**
   - Added the official `gh` (GitHub CLI) tool into the add-on image.

@@ -1,7 +1,7 @@
 ---
 name: "Gemini Terminal"
 description: "Terminal interface for Google's Gemini CLI with persistent auth and packages"
-version: "2.5.0"
+version: "2.5.1"
 slug: "gemini_terminal"
 init: false
 

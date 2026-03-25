@@ -34,12 +34,20 @@ RUN npm install -g node-gyp \
     && npm rebuild --build-from-source \
     && find . -name "*.node" -exec strip {} +
 
-# Install Home Assistant CLI for Supervisor access
-RUN curl -L -s https://github.com/home-assistant/cli/releases/download/4.33.0/ha_amd64 -o /usr/local/bin/ha \
+# Install Home Assistant CLI for Supervisor access (Architecture Aware)
+RUN \
+    case $(uname -m) in \
+        x86_64) export ARCH="amd64" ;; \
+        aarch64) export ARCH="aarch64" ;; \
+        armv7l) export ARCH="armv7" ;; \
+        *) export ARCH="amd64" ;; \
+    esac \
+    && curl -L -s "https://github.com/home-assistant/cli/releases/download/4.33.0/ha_${ARCH}" -o /usr/local/bin/ha \
     && chmod +x /usr/local/bin/ha
 
-# Copy root filesystem
-COPY rootfs /
+# Copy local scripts and run command
+COPY run.sh /run.sh
+RUN chmod a+x /run.sh
 
 # Set environment variables
 ENV GEMINI_TELEMETRY=off \
