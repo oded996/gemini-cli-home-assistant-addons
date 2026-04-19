@@ -2,7 +2,6 @@ ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 # Install system packages and development tools
-# Added github-cli to the list
 RUN apk add --no-cache \
     bash \
     curl \
@@ -24,19 +23,18 @@ RUN apk add --no-cache \
     yq \
     coreutils \
     util-linux \
-    github-cli
+    github-cli \
+    gcompat
 
-# Install Gemini CLI via npm, then rebuild native modules for Alpine musl libc.
+# Install Gemini CLI via npm, then rebuild all native modules for Alpine musl libc.
+# 
+# Problem: Many native modules (tree-sitter, node-pty) ship glibc-only prebuilds.
+# On Alpine (musl), loading these causes SIGSEGV (Segmentation Fault).
 #
-# Problem: tree-sitter-bash ships glibc-only prebuilds (prebuilds/linux-x64/).
-# node-gyp-build prefers prebuilds/ over build/, so the glibc binary is loaded
-# at runtime, causing SIGSEGV (exit 139) when the Shell tool parses bash commands.
-#
-# Fix: delete the glibc prebuilds, then rebuild from source so node-gyp-build
-# falls through to build/Release/ which is compiled against musl.
-#
-# @lydell/node-pty-linux-x64 is also a glibc prebuild; replace it with the
-# musl-compiled pty.node from node-pty/build/Release/.
+# Fix: 
+# 1. Install the CLI and its dependencies.
+# 2. Find and delete ALL 'prebuilds' and 'bin' directories containing glibc binaries.
+# 3. Run 'npm rebuild' to compile everything from source against musl.
 RUN apk add --no-cache --virtual .build-deps \
     build-base \
     g++ \
@@ -44,14 +42,13 @@ RUN apk add --no-cache --virtual .build-deps \
     linux-headers \
     && npm install -g node-gyp @google/gemini-cli@latest \
     && GEMINI_MODS=/usr/local/lib/node_modules/@google/gemini-cli/node_modules \
-    # Rebuild tree-sitter-bash for musl
-    && TSDIR="$GEMINI_MODS/tree-sitter-bash" \
-    && rm -rf "$TSDIR/prebuilds" \
-    && cd "$TSDIR" && node-gyp rebuild \
-    # Replace @lydell/node-pty-linux-x64 glibc binary with the musl-compiled one
-    && LYDELL_PTY="$GEMINI_MODS/@lydell/node-pty-linux-x64/pty.node" \
-    && COMPILED_PTY="$GEMINI_MODS/node-pty/build/Release/pty.node" \
-    && [ -f "$LYDELL_PTY" ] && [ -f "$COMPILED_PTY" ] && cp "$COMPILED_PTY" "$LYDELL_PTY" || true \
+    && cd /usr/local/lib/node_modules/@google/gemini-cli \
+    # Remove all existing prebuilds to force compilation
+    && find . -name "prebuilds" -type d -exec rm -rf {} + \
+    # Specifically handle node-pty which uses a different structure
+    && find . -name "*.node" -path "*/@lydell/*" -delete \
+    # Rebuild everything from source
+    && npm rebuild --build-from-source \
     && npm cache clean --force \
     && apk del --no-cache .build-deps
 

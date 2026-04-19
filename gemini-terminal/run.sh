@@ -96,13 +96,15 @@ EOF
 start_web_terminal() {
     local port=7682
     bashio::log.info "Starting Gemini Terminal on port ${port}..."
-
-    # Create the direct-execution wrapper
-    cat > /usr/local/bin/gemini-direct << 'EOF'
+# Create the direct-execution wrapper
+cat > /usr/local/bin/gemini-direct << 'EOF'
 #!/bin/bash
 echo -e "\033[0;36mInitializing Gemini CLI (Persistent & Scrollable)...\033[0m"
-/usr/bin/node --max-old-space-size=8192 --stack-size=10000 /usr/local/bin/gemini --no-acp "$@" 2>/config/gemini_stderr.log
+# Increase stack size and memory for stability
+/usr/bin/node --max-old-space-size=8192 --stack-size=100000 /usr/local/bin/gemini --no-acp "$@" 2>/config/gemini_stderr.log
 EXIT_CODE=$?
+EOF
+
 echo ""
 echo "------------------------------------------------"
 echo "Gemini process ended with Exit Code: $EXIT_CODE"
