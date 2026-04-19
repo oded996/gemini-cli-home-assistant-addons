@@ -29,18 +29,24 @@ init_environment() {
     # Persistence Fix: Prevent Gemini from relaunching itself
     export GEMINI_CLI_NO_RELAUNCH=1
     
-    # Restore standard interactive settings
-    cat > "$gemini_user_dir/settings.json" << 'EOF'
+    # Restore standard interactive settings ONLY if file doesn't exist
+    if [ ! -f "$gemini_user_dir/settings.json" ]; then
+        bashio::log.info "Creating default Gemini settings..."
+        cat > "$gemini_user_dir/settings.json" << 'EOF'
 {
   "approvalMode": "default",
   "screenReader": false,
   "acp": false,
-  "sandbox": false
+  "sandbox": false,
+  "mcpServers": {}
 }
 EOF
+    fi
 
-    # Trust folders for Shell tool
-    cat > "$gemini_user_dir/trustedFolders.json" << 'EOF'
+    # Trust folders for Shell tool ONLY if file doesn't exist
+    if [ ! -f "$gemini_user_dir/trustedFolders.json" ]; then
+        bashio::log.info "Creating default trusted folders..."
+        cat > "$gemini_user_dir/trustedFolders.json" << 'EOF'
 {
   "/config": "TRUST_FOLDER",
   "/": "TRUST_FOLDER",
@@ -48,6 +54,7 @@ EOF
   "/opt": "TRUST_FOLDER"
 }
 EOF
+    fi
 
     # Node Stability
     export NODE_OPTIONS="--max-old-space-size=8192"
@@ -131,11 +138,15 @@ EOF
 setup_ha_mcp() {
     if [ -f "/opt/scripts/setup-ha-mcp.sh" ]; then
         chmod +x /opt/scripts/setup-ha-mcp.sh
-        # FIX: Use ${VAR:-} to prevent "unbound variable" error if API key is not set
-        if [ -n "${GEMINI_API_KEY:-}" ]; then
-            export GEMINI_API_KEY="${GEMINI_API_KEY}"
+        
+        # If no API key is set, provide a dummy one for the setup script
+        # This prevents the Gemini CLI from failing during its internal checks
+        if [ -z "${GEMINI_API_KEY:-}" ]; then
+            bashio::log.info "No API key found, providing dummy key for MCP setup"
+            GEMINI_API_KEY="dummy_key_for_setup" GOOGLE_API_KEY="dummy_key_for_setup" /opt/scripts/setup-ha-mcp.sh || true
+        else
+            /opt/scripts/setup-ha-mcp.sh || true
         fi
-        /opt/scripts/setup-ha-mcp.sh || true
     fi
 }
 

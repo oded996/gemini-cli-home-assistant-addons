@@ -34,27 +34,63 @@ configure_ha_mcp_server() {
     # The MCP server will connect to Home Assistant via the Supervisor API
     bashio::log.info "Configuring Gemini Code MCP server for Home Assistant..."
 
-    # Remove existing ha-mcp configuration if present (to ensure clean state)
-    gemini mcp remove home-assistant 2>/dev/null || true
+    # Define settings path (respecting HOME set in run.sh)
+    local gemini_user_dir="${HOME}/.gemini"
+    local settings_file="${gemini_user_dir}/settings.json"
+    
+    mkdir -p "$gemini_user_dir"
 
-    # Add ha-mcp as MCP server
-    # Using stdio transport with pre-installed ha-mcp
-    # Environment variables:
-    #   HOMEASSISTANT_URL / HASS_URL: Internal Supervisor API endpoint
-    #   HOMEASSISTANT_TOKEN / HASS_TOKEN: Supervisor token for authentication
-    if gemini mcp add home-assistant \
-        --scope project \
-        --env "HOMEASSISTANT_URL=http://supervisor/core" \
-        --env "HOMEASSISTANT_TOKEN=${SUPERVISOR_TOKEN}" \
-        --env "HASS_URL=http://supervisor/core" \
-        --env "HASS_TOKEN=${SUPERVISOR_TOKEN}" \
-        ha-mcp; then
-        bashio::log.info "ha-mcp configured successfully!"
-        bashio::log.info "Gemini Code now has access to Home Assistant via MCP"
-        bashio::log.info "Available tools: entity control, automations, scripts, history, and more"
+    # Initialize settings.json if it doesn't exist
+    if [ ! -f "$settings_file" ]; then
+        echo '{"mcpServers": {}}' > "$settings_file"
+    fi
+
+    # Ensure mcpServers object exists
+    if ! jq -e '.mcpServers' "$settings_file" >/dev/null 2>&1; then
+        jq '. + {"mcpServers": {}}' "$settings_file" > "${settings_file}.tmp" && mv "${settings_file}.tmp" "$settings_file"
+    fi
+
+    # Determine the command to use (prefer pre-installed ha-mcp)
+    local mcp_command="ha-mcp"
+    if ! command -v ha-mcp &> /dev/null; then
+        if command -v uvx &> /dev/null; then
+            mcp_command="uvx ha-mcp"
+        else
+            bashio::log.warning "Neither ha-mcp nor uvx found - MCP might not work"
+        fi
+    fi
+
+    # Add/Update the home-assistant MCP server configuration using jq
+    # This bypasses the 'gemini mcp add' command which requires an API key to run
+    bashio::log.info "Updating MCP configuration in $settings_file"
+    
+    if jq --arg command "$mcp_command" --arg token "$SUPERVISOR_TOKEN" '.mcpServers["home-assistant"] = {
+        "command": ($command | split(" ")[0]),
+        "args": ($command | split(" ")[1:]),
+        "env": {
+            "HOMEASSISTANT_URL": "http://supervisor/core",
+            "HOMEASSISTANT_TOKEN": $token,
+            "HASS_URL": "http://supervisor/core",
+            "HASS_TOKEN": $token
+        }
+    }' "$settings_file" > "${settings_file}.tmp" && mv "${settings_file}.tmp" "$settings_file"; then
+        bashio::log.info "ha-mcp configured successfully via jq!"
+        bashio::log.info "Gemini Code will have access to Home Assistant via MCP once started"
     else
-        bashio::log.warning "Failed to configure ha-mcp - continuing without MCP integration"
-        bashio::log.warning "You can manually run: gemini mcp add home-assistant --env HOMEASSISTANT_URL=http://supervisor/core --env HOMEASSISTANT_TOKEN=\$SUPERVISOR_TOKEN -- uvx ha-mcp@3.5.1"
+        bashio::log.warning "Failed to configure ha-mcp using jq - attempting legacy method"
+        
+        # Fallback to gemini mcp add (might fail if no API key is set)
+        if gemini mcp add home-assistant \
+            --env "HOMEASSISTANT_URL=http://supervisor/core" \
+            --env "HOMEASSISTANT_TOKEN=${SUPERVISOR_TOKEN}" \
+            --env "HASS_URL=http://supervisor/core" \
+            --env "HASS_TOKEN=${SUPERVISOR_TOKEN}" \
+            ha-mcp; then
+            bashio::log.info "ha-mcp configured successfully via CLI!"
+        else
+            bashio::log.warning "Failed to configure ha-mcp - continuing without MCP integration"
+            bashio::log.warning "You can manually run: gemini mcp add home-assistant --env HOMEASSISTANT_URL=http://supervisor/core --env HOMEASSISTANT_TOKEN=\$SUPERVISOR_TOKEN -- ha-mcp"
+        fi
     fi
 }
 
