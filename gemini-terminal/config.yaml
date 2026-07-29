@@ -1,7 +1,7 @@
 ---
-name: "Gemini Terminal"
-description: "Terminal interface for Google's Gemini CLI with deep MCP integration"
-version: "2.6.4"
+name: "Antigravity CLI"
+description: "Terminal interface for Google's Antigravity CLI (agy) with deep MCP integration"
+version: "3.0.0"
 slug: "gemini_terminal"
 url: "https://github.com/oded996/gemini-cli-home-assistant-addons"
 arch:
@@ -14,8 +14,8 @@ init: false
 ingress: true
 ingress_port: 8099
 ingress_stream: true
-panel_icon: mdi:account-circle-outline
-panel_title: "Gemini Terminal"
+panel_icon: mdi:google-gemini
+panel_title: "Antigravity CLI"
 
 # File access - Home Assistant config directory
 map:
@@ -90,5 +90,7 @@ schema:
 backup_exclude:
   - ".npm/*"
   - ".cache/*"
+  - ".local/share/antigravity/cache/*"
   - ".local/share/gemini/cache/*"
+  - ".antigravity/cache/*"
   - ".env_vars"

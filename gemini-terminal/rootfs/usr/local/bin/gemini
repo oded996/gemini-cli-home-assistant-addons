@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# =============================================================================
+# gemini - Backward compatibility wrapper for Antigravity CLI (agy)
+# =============================================================================
+# Gemini CLI has been transitioned to Antigravity CLI (agy).
+# This wrapper routes legacy 'gemini' commands directly to 'agy'.
+
+export PATH="/usr/local/bin:/usr/bin:/bin:/root/.antigravity/bin:/data/.antigravity/bin:/root/.local/bin:/data/.local/bin:$PATH"
+
+if [ -z "$SILENT_MIGRATION_NOTICE" ]; then
+    echo "[Info] Gemini CLI transitioned to Antigravity CLI (agy). Executing: agy $*" >&2
+fi
+
+AGY_BIN=$(which agy 2>/dev/null || find /root /usr /data -name "agy" -type f 2>/dev/null | head -n 1 || echo "agy")
+exec "$AGY_BIN" "$@"

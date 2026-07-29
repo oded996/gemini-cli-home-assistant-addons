@@ -1,10 +1,10 @@
 #!/command/with-contenv bashio
 # ==============================================================================
-# Gemini Terminal - Initialization Service (oneshot)
+# Antigravity CLI - Initialization Service (oneshot)
 # Runs once at container startup to prepare the environment
 # ==============================================================================
 
-bashio::log.info "Initializing Gemini Terminal..."
+bashio::log.info "Initializing Antigravity CLI..."
 
 # Save addon version for the terminal banner
 bashio::addon.version > /data/.addon_version
@@ -28,7 +28,7 @@ bashio::log.info "Configuration: MCP=${MCP_ENABLED} SCREENSHOT=${SCREENSHOT_ENAB
 ENV_VARS_FILE="/data/.env_vars"
 rm -f "${ENV_VARS_FILE}"
 
-# Set up Gemini specific environment variables
+# Set up Gemini and Antigravity specific environment variables
 cat >> "${ENV_VARS_FILE}" << 'EOF'
 export HOME="/data"
 export XDG_CONFIG_HOME="/data/.config"
@@ -36,6 +36,9 @@ export XDG_DATA_HOME="/data/.local/share"
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 export TERM="xterm-256color"
+export ANTIGRAVITY_CONFIG_DIR="/data/.config/antigravity"
+export ANTIGRAVITY_HOME="/data"
+export ANTIGRAVITY_TELEMETRY=off
 export GEMINI_CONFIG_DIR="/data/.config/gemini"
 export GEMINI_HOME="/data"
 export GEMINI_TELEMETRY=off
@@ -48,7 +51,8 @@ EOF
 if [ -n "$GEMINI_API_KEY" ] && [ "$GEMINI_API_KEY" != "null" ]; then
     printf "export GOOGLE_API_KEY='%s'\n" "${GEMINI_API_KEY}" >> "${ENV_VARS_FILE}"
     printf "export GEMINI_API_KEY='%s'\n" "${GEMINI_API_KEY}" >> "${ENV_VARS_FILE}"
-    bashio::log.info "Gemini API key configured"
+    printf "export ANTIGRAVITY_API_KEY='%s'\n" "${GEMINI_API_KEY}" >> "${ENV_VARS_FILE}"
+    bashio::log.info "Antigravity/Gemini API key configured"
 fi
 
 ENV_VARS_COUNT=$(bashio::config 'env_vars | length')
@@ -101,31 +105,32 @@ if [ -n "${ACCESS_TOKEN}" ]; then
 fi
 
 # ==============================================================================
-# Setup Gemini configuration
+# Setup Antigravity / Gemini configuration
 # ==============================================================================
 
+ANTIGRAVITY_USER_DIR="/data/.antigravity"
 GEMINI_USER_DIR="/data/.gemini"
-mkdir -p "$GEMINI_USER_DIR"
+mkdir -p "$ANTIGRAVITY_USER_DIR" "$GEMINI_USER_DIR"
 mkdir -p "/data/.cache"
-mkdir -p "/data/.local/share"
-mkdir -p "/data/.config"
+mkdir -p "/data/.local/share/antigravity" "/data/.local/share/gemini"
+mkdir -p "/data/.config/antigravity" "/data/.config/gemini"
 
-if [ ! -f "$GEMINI_USER_DIR/settings.json" ]; then
-    bashio::log.info "Creating default Gemini settings..."
-    cat > "$GEMINI_USER_DIR/settings.json" << 'EOF'
+if [ ! -f "$ANTIGRAVITY_USER_DIR/settings.json" ]; then
+    bashio::log.info "Creating default Antigravity settings..."
+    cat > "$ANTIGRAVITY_USER_DIR/settings.json" << 'EOF'
 {
   "approvalMode": "default",
   "screenReader": false,
   "acp": false,
-  "sandbox": false,
-  "mcpServers": {}
+  "sandbox": false
 }
 EOF
 fi
+cp "$ANTIGRAVITY_USER_DIR/settings.json" "$GEMINI_USER_DIR/settings.json" 2>/dev/null || true
 
-if [ ! -f "$GEMINI_USER_DIR/trustedFolders.json" ]; then
+if [ ! -f "$ANTIGRAVITY_USER_DIR/trustedFolders.json" ]; then
     bashio::log.info "Creating default trusted folders..."
-    cat > "$GEMINI_USER_DIR/trustedFolders.json" << 'EOF'
+    cat > "$ANTIGRAVITY_USER_DIR/trustedFolders.json" << 'EOF'
 {
   "/config": "TRUST_FOLDER",
   "/homeassistant": "TRUST_FOLDER",
@@ -134,12 +139,14 @@ if [ ! -f "$GEMINI_USER_DIR/trustedFolders.json" ]; then
   "/opt": "TRUST_FOLDER"
 }
 EOF
+    cp "$ANTIGRAVITY_USER_DIR/trustedFolders.json" "$GEMINI_USER_DIR/trustedFolders.json" 2>/dev/null || true
 fi
 
-if [ ! -f "/homeassistant/.geminiignore" ]; then
-    cat > "/homeassistant/.geminiignore" << 'EOF'
+if [ ! -f "/homeassistant/.antigravityignore" ]; then
+    cat > "/homeassistant/.antigravityignore" << 'EOF'
 .storage/
 .git/
+.antigravity*/
 .gemini*/
 backups/
 addons/
@@ -153,18 +160,26 @@ node_modules/
 *.db
 *.log
 EOF
+    cp "/homeassistant/.antigravityignore" "/homeassistant/.geminiignore" 2>/dev/null || true
 fi
 
-# Set up MCP server
+# Set up MCP server in mcp_config.json
 if [ "$MCP_ENABLED" = "true" ]; then
-    bashio::log.info "Configuring MCP server..."
-    # The ha-mcp-server built from OpenCode is located at /opt/ha-mcp-server/build/index.js
-    jq '.mcpServers["home-assistant"] = {
-        "command": "node",
-        "args": ["/opt/ha-mcp-server/index.js"],
-        "env": {"SUPERVISOR_TOKEN": "'$SUPERVISOR_TOKEN'"}
-        
-    }' "$GEMINI_USER_DIR/settings.json" > "$GEMINI_USER_DIR/settings.tmp" && mv "$GEMINI_USER_DIR/settings.tmp" "$GEMINI_USER_DIR/settings.json"
+    bashio::log.info "Configuring MCP server in mcp_config.json..."
+    cat > "$ANTIGRAVITY_USER_DIR/mcp_config.json" << EOF
+{
+  "mcpServers": {
+    "home-assistant": {
+      "command": "node",
+      "args": ["/opt/ha-mcp-server/index.js"],
+      "env": {
+        "SUPERVISOR_TOKEN": "${SUPERVISOR_TOKEN}"
+      }
+    }
+  }
+}
+EOF
+    cp "$ANTIGRAVITY_USER_DIR/mcp_config.json" "$GEMINI_USER_DIR/mcp_config.json" 2>/dev/null || true
 fi
 
 # ==============================================================================

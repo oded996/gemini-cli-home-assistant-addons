@@ -1,6 +1,6 @@
 # Global ARGs (available in FROM instructions)
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
-ARG BUILD_ARCH
+ARG BUILD_ARCH=amd64
+ARG BUILD_FROM=ghcr.io/home-assistant/${BUILD_ARCH}-base-debian:trixie
 
 ## Stage 1: Build hab CLI from source (pinned release)
 FROM golang:1.24-trixie AS hab-builder
@@ -80,8 +80,13 @@ RUN python3 -m venv /opt/zigporter-venv \
     && /opt/zigporter-venv/bin/pip install --no-cache-dir zigporter \
     && ln -s /opt/zigporter-venv/bin/zigporter /usr/local/bin/zigporter
 
-# Install Gemini CLI and Prettier globally
-RUN npm install -g @google/gemini-cli@latest prettier \
+# Install Antigravity CLI (agy) and Prettier globally
+RUN curl -fsSL https://antigravity.google/cli/install.sh | bash \
+    && ( for p in /root/.antigravity/bin/agy /root/.local/bin/agy /root/bin/agy /usr/local/bin/agy; do \
+           if [ -f "$p" ]; then cp "$p" /usr/local/bin/agy 2>/dev/null || true; break; fi; \
+         done ) \
+    && chmod +x /usr/local/bin/agy 2>/dev/null || true \
+    && npm install -g prettier \
     && npm cache clean --force
 
 # Copy package.json files first for better layer caching
@@ -100,7 +105,7 @@ RUN chmod +x /usr/local/bin/* \
     && chmod +x /etc/s6-overlay/s6-rc.d/ha-gemini/run \
     && chmod +x /etc/profile.d/hab-esphome.sh \
     && chmod +x /etc/profile.d/zigporter-z2m.sh \
-    && mkdir -p /data/.local/share/gemini /data/.config/gemini
+    && mkdir -p /data/.local/share/antigravity /data/.config/antigravity /data/.antigravity /data/.local/share/gemini /data/.config/gemini
 
 # Set working directory to HA config (mounted at runtime)
 WORKDIR /homeassistant
@@ -111,7 +116,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Labels for Home Assistant
 LABEL \
-    io.hass.name="Gemini Terminal" \
-    io.hass.description="Terminal interface for Google's Gemini CLI with deep MCP integration" \
+    io.hass.name="Antigravity CLI" \
+    io.hass.description="Terminal interface for Google's Antigravity CLI (agy) with deep MCP integration" \
     io.hass.type="addon" \
-    io.hass.version="${BUILD_VERSION}"
+    io.hass.version="${BUILD_VERSION}" \
+    org.opencontainers.image.title="Antigravity CLI" \
+    org.opencontainers.image.description="Terminal interface for Google's Antigravity CLI (agy) with deep MCP integration" \
+    org.opencontainers.image.source="https://github.com/oded996/gemini-cli-home-assistant-addons" \
+    org.opencontainers.image.licenses="Apache-2.0"

@@ -1,4 +1,4 @@
-# Gemini Terminal Add-on - Development Status
+# Antigravity CLI Add-on - Development Status
 
 ## Project Overview
 Refitting the Home Assistant add-on to support Google's Gemini CLI, including interactive session management, Home Assistant MCP integration, and automated context generation.

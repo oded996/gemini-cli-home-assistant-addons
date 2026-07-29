@@ -1,6 +1,6 @@
 #!/command/with-contenv bashio
 # ==============================================================================
-# Gemini Terminal - Terminal Service (ttyd + tmux via ingress)
+# Antigravity CLI - Terminal Service (ttyd + tmux via ingress)
 # ==============================================================================
 
 # Set home to persistent data directory
@@ -14,7 +14,7 @@ if [ -f /data/.env_vars ]; then
 fi
 
 bashio::log.info "=============================================="
-bashio::log.info "  Gemini Terminal (ttyd + ingress)"
+bashio::log.info "  Antigravity CLI (ttyd + ingress)"
 bashio::log.info "=============================================="
 
 # ==============================================================================

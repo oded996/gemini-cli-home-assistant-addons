@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers local development and testing workflows for the Gemini Terminal add-on.
+This guide covers local development and testing workflows for the Antigravity CLI add-on.
 
 ## Local Container Testing
 
@@ -9,6 +9,14 @@ This guide covers local development and testing workflows for the Gemini Termina
 - **Podman** (or Docker) installed
 - **Git** repository cloned locally
 - **NixOS development environment** (optional, for `nix develop`)
+
+### Automated Unit Testing
+
+Run the Python unit test suite to validate shell script syntax (`bash -n`), Dockerfile installer logic, MCP configuration schema, and alias wrappers:
+
+```bash
+python3 -m unittest discover -s tests
+```
 
 ### Quick Start Testing
 

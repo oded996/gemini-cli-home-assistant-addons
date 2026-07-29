@@ -6,7 +6,7 @@
 show_banner() {
     clear
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    🤖 Gemini Terminal                        ║"
+    echo "║                    🤖 Antigravity CLI                        ║"
     echo "║                   Interactive Session Picker                ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo ""
@@ -38,44 +38,43 @@ get_user_choice() {
 }
 
 launch_gemini_new() {
-    echo "🚀 Starting new Gemini session..."
+    echo "🚀 Starting new session..."
     sleep 1
-    exec node "$(which gemini)"
+    exec agy
 }
 
 launch_gemini_continue() {
     echo "⏩ Continuing most recent conversation..."
     sleep 1
-    exec node "$(which gemini)" -c
+    exec agy -c
 }
 
 launch_gemini_resume() {
     echo "📋 Opening conversation list for selection..."
     sleep 1
-    exec node "$(which gemini)" -r
+    exec agy -r
 }
 
 launch_gemini_custom() {
     echo ""
-    echo "Enter your Gemini command (e.g., 'gemini --help' or 'gemini -p \"hello\"'):"
+    echo "Enter your command (e.g., 'agy --help' or 'agy -p \"hello\"'):"
     echo "Available flags: -c (continue), -r (resume), -p (print), --model, etc."
-    echo -n "> gemini "
+    echo -n "> agy "
     read -r custom_args
     
     if [ -z "$custom_args" ]; then
         echo "No arguments provided. Starting default session..."
         launch_gemini_new
     else
-        echo "🚀 Running: gemini $custom_args"
+        echo "🚀 Running: agy $custom_args"
         sleep 1
-        # Use eval to properly handle quoted arguments
-        eval "exec node \$(which gemini) $custom_args"
+        eval "exec agy $custom_args"
     fi
 }
 
 launch_bash_shell() {
     echo "🐚 Dropping to bash shell..."
-    echo "Tip: Run 'gemini' manually when ready, or 'gemini-logout' to clear credentials"
+    echo "Tip: Run 'agy' (or 'gemini') manually when ready, or 'gemini-logout' to clear credentials"
     sleep 1
     exec bash
 }

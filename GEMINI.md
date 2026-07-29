@@ -4,7 +4,7 @@ This file provides guidance to Gemini CLI when working with code in this reposit
 
 ## Project Overview
 
-This repository contains Home Assistant add-ons, specifically the **Gemini Terminal** add-on which provides a web-based terminal interface with the Google **Gemini CLI** pre-installed. The add-on allows Home Assistant users to access Gemini AI capabilities directly from their dashboard.
+This repository contains Home Assistant add-ons, specifically the **Antigravity CLI** add-on which provides a web-based terminal interface with Google's **Antigravity CLI** (`agy`) pre-installed. The add-on allows Home Assistant users to access AI capabilities directly from their dashboard.
 
 ## Development Environment
 
@@ -18,7 +18,7 @@ direnv allow
 ```
 
 ### Core Development Commands
-- `build-addon` - Build the Gemini Terminal add-on with Podman.
+- `build-addon` - Build the Antigravity CLI add-on with Podman.
 - `run-addon` - Run add-on locally on port 7682 with volume mapping.
 - `lint-dockerfile` - Lint Dockerfile using hadolint.
 - `test-endpoint` - Test web endpoint availability (curl localhost:7682).
